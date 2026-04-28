@@ -122,7 +122,9 @@ function formatIssue(issue: Issue): string[] {
 export function formatDoctorReport(result: DoctorResult): string {
   const ruleOverrides =
     result.ruleOverrides.length > 0
-      ? result.ruleOverrides.map((entry) => entry.label ?? entry.ruleId).join(", ")
+      ? result.ruleOverrides
+          .map((entry) => entry.label ?? entry.ruleId)
+          .join(", ")
       : "none";
   const lines = [
     "context-debt doctor",

@@ -18,7 +18,8 @@ export function getConfidenceLabel(confidence: number): ConfidenceLabel {
 export function withDerivedIssueFields(issue: Issue): Issue {
   return {
     ...issue,
-    confidenceLabel: issue.confidenceLabel ?? getConfidenceLabel(issue.confidence),
+    confidenceLabel:
+      issue.confidenceLabel ?? getConfidenceLabel(issue.confidence),
     relatedFiles: normalizeRelatedFiles(issue),
   };
 }

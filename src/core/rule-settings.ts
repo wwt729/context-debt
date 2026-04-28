@@ -1,5 +1,9 @@
 import { withDerivedIssueFields } from "./confidence.js";
-import { getRuleSetting, isRuleDisabled, resolveRuleSeverity } from "./config.js";
+import {
+  getRuleSetting,
+  isRuleDisabled,
+  resolveRuleSeverity,
+} from "./config.js";
 import type { Issue, RuleModule, ScanContext } from "./types.js";
 
 export function runRuleWithSettings(
