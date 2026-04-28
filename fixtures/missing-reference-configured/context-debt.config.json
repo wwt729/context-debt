@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "referencedFileMissing": {
+      "ignorePaths": ["api_response_examples.md"],
+      "ignoreGlobs": ["docs/**/*.md"],
+      "ignorePatterns": []
+    }
+  }
+}

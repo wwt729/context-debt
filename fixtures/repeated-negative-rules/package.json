@@ -1,0 +1,8 @@
+{
+  "name": "repeated-negative-rules",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "test": "echo ok",
+    "build": "echo build"
+  }
+}

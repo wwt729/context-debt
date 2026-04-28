@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "referencedFileMissing": {
+      "ignorePaths": ["legacy/setup.md"],
+      "ignoreGlobs": [],
+      "ignorePatterns": []
+    }
+  }
+}

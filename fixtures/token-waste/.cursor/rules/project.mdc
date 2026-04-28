@@ -1,0 +1,7 @@
+---
+description: Project rules
+---
+
+Always use pnpm for dependency commands and repository tasks in every workflow.
+
+Keep Cursor-specific editing constraints in this rule file.

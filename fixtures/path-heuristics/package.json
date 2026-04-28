@@ -1,0 +1,8 @@
+{
+  "name": "path-heuristics",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "test": "echo ok",
+    "build": "echo build"
+  }
+}

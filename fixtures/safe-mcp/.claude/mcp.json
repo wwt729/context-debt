@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "browser-localhost": {
+      "description": "Only used for local preview checks",
+      "command": "npx",
+      "args": ["-y", "@browser/mcp-playwright"],
+      "allowedDomains": ["http://localhost:3000"]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "missing-test-script",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "echo build"
+  }
+}

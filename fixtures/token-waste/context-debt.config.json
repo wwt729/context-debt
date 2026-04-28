@@ -1,0 +1,7 @@
+{
+  "thresholds": {
+    "duplicateInstructionSimilarity": 0.95,
+    "oversizedContextChars": 12000,
+    "tokenWasteMinWords": 20
+  }
+}

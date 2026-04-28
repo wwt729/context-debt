@@ -1,0 +1,6 @@
+node_modules
+dist
+coverage
+*.log
+.pnpm-store
+.tmp-smoke

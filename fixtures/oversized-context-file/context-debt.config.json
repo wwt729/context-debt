@@ -1,0 +1,5 @@
+{
+  "thresholds": {
+    "oversizedContextChars": 120
+  }
+}

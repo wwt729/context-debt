@@ -1,0 +1,8 @@
+{
+  "name": "duplicate-instructions",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "test": "echo ok",
+    "build": "echo build"
+  }
+}

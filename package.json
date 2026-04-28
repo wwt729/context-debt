@@ -1,0 +1,67 @@
+{
+  "name": "context-debt",
+  "version": "0.1.0",
+  "description": "Find stale, conflicting, risky, and wasteful AI coding instructions in your repo.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "context-debt": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "check": "pnpm lint && pnpm test && pnpm build",
+    "smoke:package": "node scripts/smoke-package.mjs",
+    "prepublishOnly": "pnpm check && pnpm smoke:package",
+    "context-debt": "node dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "ai",
+    "agents",
+    "claude",
+    "context",
+    "codex",
+    "cursor",
+    "cli",
+    "lint",
+    "mcp",
+    "static-analysis"
+  ],
+  "license": "MIT",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "commander": "^14.0.1",
+    "fast-glob": "^3.3.3",
+    "picocolors": "^1.1.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.6",
+    "@types/node": "^24.9.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.7"
+  }
+}

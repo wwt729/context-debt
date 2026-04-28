@@ -1,0 +1,8 @@
+{
+  "name": "command-variants",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "test:unit": "vitest run",
+    "build": "tsup"
+  }
+}

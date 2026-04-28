@@ -1,0 +1,10 @@
+{
+  "ruleSettings": {
+    "missing-lint-script": {
+      "enabled": false
+    },
+    "repeated-negative-rules": {
+      "severity": "MEDIUM"
+    }
+  }
+}
