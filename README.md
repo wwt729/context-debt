@@ -1,10 +1,48 @@
 # context-debt
 
-Find stale, conflicting, missing, risky, duplicated, and wasteful AI coding instructions in your repo.
+[English](./README.md) | [简体中文](./README.zh-CN.md)
 
-`context-debt` is a publishable npm CLI that statically scans repository context for Codex, Claude Code, Cursor, Copilot, Windsurf, MCP configs, and project metadata before those instructions drift into failures or token waste.
+Context debt scanner for AI coding instructions.
+
+`context-debt` is a publishable npm CLI that statically scans repository instructions for Codex, Claude Code, Cursor, Copilot, Windsurf, MCP configs, and project metadata before they drift into breakage, false guidance, security risk, or token waste.
 
 Your code has technical debt. Your AI context has context debt.
+
+## Overview
+
+`context-debt` treats AI instructions like lintable source artifacts.
+
+It is designed for repositories that already contain files such as:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `.cursor/rules/*.mdc`
+- `.github/copilot-instructions.md`
+- Codex / Windsurf instruction files
+- `README.md`
+- `package.json`
+- `.mcp.json`, `.cursor/mcp.json`, `.claude/mcp.json`
+
+## Why
+
+AI coding assistants are now part of the repo surface. Over time, those instructions drift:
+
+- commands stop matching `package.json`
+- referenced docs get renamed or deleted
+- different tools recommend different package managers
+- giant instruction files waste context budget
+- permissive MCP configs outgrow their original intent
+
+`context-debt` solves this as a deterministic static-analysis problem instead of an LLM runtime problem.
+
+## Principles
+
+- Static-analysis first.
+- No external LLM API in MVP.
+- No telemetry.
+- No network access by default.
+- Deterministic and testable rules.
+- Human-readable terminal output and machine-readable JSON output.
 
 ## Install
 
@@ -12,17 +50,57 @@ Your code has technical debt. Your AI context has context debt.
 pnpm add -D context-debt
 ```
 
-## Basic usage
+Or:
+
+```bash
+npm install -D context-debt
+```
+
+Requirements:
+
+- Node.js `>= 20`
+- `pnpm` is recommended for development in this repository
+
+## Basic Usage
 
 ```bash
 context-debt scan .
 context-debt scan . --strict
 context-debt scan . --format json
-context-debt scan . --max-issues 20
 context-debt doctor .
 context-debt fix .
 context-debt fix . --write
 ```
+
+Typical workflow:
+
+1. Run `context-debt scan .` locally while editing instructions.
+2. Add `context-debt scan . --strict` to CI.
+3. Use `context-debt doctor .` when file discovery or config behavior looks off.
+4. Use `context-debt fix .` to preview safe fixes.
+
+## What Gets Scanned
+
+`context-debt` currently scans project metadata and instruction-like files, including:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- Cursor rules under `.cursor/rules/`
+- Copilot instructions
+- Codex-related instruction files
+- Windsurf-related instruction files
+- `README.md`
+- `package.json`
+- MCP config files
+
+It does not try to "understand everything". It checks structured signals such as:
+
+- command references
+- local file/path references
+- package manager guidance
+- MCP capability hints and allowlists
+- duplicated or oversized instruction blocks
+- rule density and repeated negative rules
 
 ## Commands
 
@@ -32,16 +110,27 @@ context-debt fix . --write
 context-debt scan [path]
 ```
 
+Scan a repository and emit text or JSON results.
+
 Options:
 
-- `--json`: legacy convenience flag for JSON output
+- `--json`: convenience flag for JSON output
 - `--format <text|json>`: explicit output format
 - `--strict`: fail on `MEDIUM` and `HIGH`
 - `--no-color`: disable ANSI color
-- `--config <path>`: load a custom `context-debt.config.json`
-- `--max-issues <count>`: cap displayed issues while preserving full summary totals
-- `--include <glob>`: append include globs at runtime
-- `--exclude <glob>`: append exclude globs at runtime
+- `--config <path>`: custom config file
+- `--max-issues <count>`: cap displayed issues while keeping full totals
+- `--include <glob>`: append include globs
+- `--exclude <glob>`: append exclude globs
+
+Examples:
+
+```bash
+context-debt scan .
+context-debt scan . --strict
+context-debt scan . --format json --max-issues 20
+context-debt scan . --config ./context-debt.config.json
+```
 
 ### `doctor`
 
@@ -49,12 +138,12 @@ Options:
 context-debt doctor [path]
 ```
 
-Prints discovery diagnostics:
+Print discovery diagnostics for the repository:
 
 - config status
 - package.json presence
 - discovered primary context files
-- detected MCP config files
+- detected MCP files
 - discovered file counts by kind
 
 ### `fix`
@@ -64,11 +153,13 @@ context-debt fix [path]
 context-debt fix [path] --write
 ```
 
-`fix` is intentionally conservative and currently handles:
+`fix` is intentionally conservative and only applies high-confidence edits.
 
-- removing lines that reference missing local files
-- removing exact duplicate instruction units
-- generating `context-debt.compact.md` from canonical instruction blocks
+Current fixers:
+
+- remove lines that reference missing local files
+- remove exact duplicate instruction units
+- generate `context-debt.compact.md` from canonical instruction blocks
 
 ### `init`
 
@@ -76,9 +167,9 @@ context-debt fix [path] --write
 context-debt init
 ```
 
-Creates a default `context-debt.config.json` in the current directory.
+Create a default `context-debt.config.json` in the current directory.
 
-## Sample output
+## Sample Output
 
 ```text
 Context Debt Report
@@ -108,7 +199,14 @@ LOW (1)
 Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 ```
 
-## JSON example
+Interpretation:
+
+- `HIGH`: likely broken or risky guidance
+- `MEDIUM`: conflicting, stale, or oversized context
+- `LOW`: signal-quality or token-efficiency problems
+- `INFO`: informational findings
+
+## JSON Example
 
 ```json
 {
@@ -155,6 +253,14 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 }
 ```
 
+Useful fields:
+
+- `summary`: total issue counts by severity
+- `displayedIssues` vs `totalIssues`: affected by `--max-issues`
+- `confidence`: rule confidence score
+- `sourceKind`: where the issue originated
+- `resolvedPath`: normalized resolved path when available
+
 ## Configuration
 
 Create `context-debt.config.json`:
@@ -188,38 +294,41 @@ Create `context-debt.config.json`:
 }
 ```
 
-Configuration notes:
+Configuration reference:
 
-- `ruleSettings.<rule-id>.enabled`: turn a rule off
-- `ruleSettings.<rule-id>.severity`: override severity
-- `rules.referencedFileMissing.ignorePaths`: exact raw or repo-relative paths
-- `rules.referencedFileMissing.ignoreGlobs`: repo-relative glob ignores
-- `rules.referencedFileMissing.ignorePatterns`: regex-based ignores
-- `scan.include` and `scan.exclude`: repository-specific discovery tuning
-- `thresholds.duplicateInstructionSimilarity`: overlap threshold for `duplicate-instructions`
-- `thresholds.oversizedContextChars`: char threshold for `oversized-context-file`
-- `thresholds.tokenWasteMinWords`: minimum duplicated words before `token-waste`
+| Key | Meaning |
+| --- | --- |
+| `ruleSettings.<rule-id>.enabled` | Disable a rule completely |
+| `ruleSettings.<rule-id>.severity` | Override rule severity |
+| `rules.referencedFileMissing.ignorePaths` | Exact raw or repo-relative paths to ignore |
+| `rules.referencedFileMissing.ignoreGlobs` | Repo-relative glob patterns to ignore |
+| `rules.referencedFileMissing.ignorePatterns` | Regex-based ignore patterns |
+| `scan.include` | Additional include globs |
+| `scan.exclude` | Additional exclude globs |
+| `thresholds.duplicateInstructionSimilarity` | Similarity threshold for `duplicate-instructions` |
+| `thresholds.oversizedContextChars` | Character limit for `oversized-context-file` |
+| `thresholds.tokenWasteMinWords` | Minimum duplicated words before `token-waste` fires |
 
 ## Rules
 
 | Rule | Severity | What it checks |
 | --- | --- | --- |
-| `missing-test-script` | `HIGH` | AI docs reference a Node test command that package.json does not expose |
-| `missing-build-script` | `HIGH` | AI docs reference a build command with no matching script |
-| `missing-lint-script` | `HIGH` | AI docs reference a lint command with no matching script |
-| `conflicting-package-manager` | `HIGH` | Instructions, lockfiles, and package metadata disagree on npm/pnpm/yarn |
-| `dangerous-mcp-permission` | `HIGH` | MCP servers imply wide access without enough scoping or explanation |
-| `referenced-file-missing` | `HIGH` | AI docs point to missing local files or docs |
+| `missing-test-script` | `HIGH` | AI docs reference a test command missing from `package.json` |
+| `missing-build-script` | `HIGH` | AI docs reference a build command missing from `package.json` |
+| `missing-lint-script` | `HIGH` | AI docs reference a lint command missing from `package.json` |
+| `conflicting-package-manager` | `HIGH` | Instructions, lockfiles, and metadata disagree on npm/pnpm/yarn |
+| `dangerous-mcp-permission` | `HIGH` | MCP servers imply broad capability without enough scoping |
+| `referenced-file-missing` | `HIGH` | AI docs point to missing local files |
 | `contradictory-test-command` | `MEDIUM` | Different files recommend conflicting test commands |
-| `stale-reference` | `MEDIUM` | A referenced path looks renamed or outdated |
-| `oversized-context-file` | `MEDIUM` | One context file is too large for efficient prompt use |
+| `stale-reference` | `MEDIUM` | A referenced path appears stale after a rename |
+| `oversized-context-file` | `MEDIUM` | A context file is too large for efficient prompt use |
 | `duplicate-instructions` | `MEDIUM` | Instruction blocks overlap heavily across files |
-| `too-many-global-rules` | `MEDIUM` | One global instruction file is carrying too much policy |
-| `token-waste` | `LOW` | Long duplicated instruction text wastes prompt budget |
-| `repeated-negative-rules` | `LOW` | Repeated “do not” rules create noisy, low-signal instruction sets |
-| `missing-ai-context` | `LOW` | The repo has no primary AI context file at all |
+| `too-many-global-rules` | `MEDIUM` | One global file carries too much policy |
+| `token-waste` | `LOW` | Long duplicated text wastes prompt budget |
+| `repeated-negative-rules` | `LOW` | Repeated “do not” rules lower signal quality |
+| `missing-ai-context` | `LOW` | The repo has no primary AI context file |
 
-## MCP scanning example
+## MCP Scanning Example
 
 `context-debt` scans these MCP config locations by default:
 
@@ -243,7 +352,7 @@ Example risky config:
 }
 ```
 
-Scanning it:
+Run:
 
 ```bash
 context-debt scan . --format json
@@ -251,14 +360,14 @@ context-debt scan . --format json
 
 Typical outcome:
 
-- `dangerous-mcp-permission` when a server implies broad filesystem/network/command scope without a clear allowlist or explanation
+- `dangerous-mcp-permission` when a server implies broad filesystem, command, or network scope without a clear allowlist or explanation
 
-Safe configs usually include both:
+Safer MCP configs usually include both:
 
 - a human-readable `description` or rationale
 - a narrow allowlist such as `roots`, `allowedPaths`, `allowedCommands`, or `allowedDomains`
 
-## CI example
+## CI Example
 
 Minimal GitHub Actions step:
 
@@ -274,16 +383,22 @@ Minimal GitHub Actions step:
 - run: pnpm exec context-debt scan . --strict
 ```
 
+Meaning:
+
+- fail CI on `HIGH`
+- fail CI on `MEDIUM` when `--strict` is enabled
+- allow `LOW` and `INFO` to pass by default
+
 This repository also includes a full workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) covering:
 
-- lint
-- test on Node 20 and 22
-- build
-- macOS/Linux package smoke tests against the packed tarball
+- `lint`
+- `test` on Node 20 and 22
+- `build`
+- macOS/Linux package smoke tests
 
-## Package smoke test
+## Package Smoke Test
 
-Release validation should exercise the package that npm users install, not only the local source tree:
+Release validation should test the actual packed artifact, not only the local source tree.
 
 ```bash
 pnpm build
@@ -293,16 +408,26 @@ pnpm smoke:package
 The smoke script:
 
 - runs `pnpm pack`
-- extracts the tarball and validates the packaged files that npm users receive
-- verifies packed CLI execution on a clean fixture
-- verifies direct CLI execution with `scan .` from a separate working directory
+- extracts the tarball and checks packaged files
+- runs the packed CLI on a clean fixture
+- verifies CLI path behavior from a separate working directory
 
-## Sample CI exit behavior
+## Exit Codes
 
-- `HIGH` issues: exit `1`
-- `MEDIUM` issues with `--strict`: exit `1`
-- `LOW` or `INFO` only: exit `0`
-- runtime/config errors: exit `2`
+- `0`: only `LOW` / `INFO`, or no issues
+- `1`: `HIGH`, or `MEDIUM` under `--strict`
+- `2`: runtime or config error
+
+## Use Cases
+
+Use `context-debt` when you want to:
+
+- keep `AGENTS.md` and `CLAUDE.md` aligned
+- catch broken paths before agents waste cycles
+- standardize package-manager guidance across docs
+- control MCP risk in repo-local config files
+- reduce duplicated instruction blocks across tools
+- add deterministic AI-context checks to CI
 
 ## Roadmap
 
@@ -310,7 +435,7 @@ The smoke script:
 - richer rule-level documentation and examples
 - more real-repo regression fixtures to calibrate false positives
 
-## Release notes
+## Release Notes
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/releasing.md](docs/releasing.md)
