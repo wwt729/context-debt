@@ -18,6 +18,13 @@ const pathTokenPattern =
   /\b(?:read|open|see|check|review|use|edit|inspect)\s+((?:\.{0,2}\/|\.?[\w-]+\/)[^\s)`,:;]+)/gi;
 const explicitManagerPattern =
   /\b(?:use|prefer|install with|run with)\s+(pnpm|npm|yarn)\b/gi;
+const actionVerbPattern =
+  /\b(?:read|open|see|check|review|use|edit|inspect|follow|update|create|compare|load|visit)\b/iu;
+const catalogLeadInPattern =
+  /\b(?:such as|including|includes|supported|supports|supports scanning|currently scans|scans|scan|examples?)\b/iu;
+const standaloneCodeListPattern =
+  /^\s*(?:[-*+]\s+|\d+\.\s+)?(?:`[^`\n]+`\s*(?:,\s*|\/\s*|\|\s*|\band\b\s*|\bor\b\s*)?)+$/iu;
+const markdownNoisePattern = /[*_>#]/gu;
 
 type ParsedMarkdownContext = {
   commands: ExtractedCommand[];
@@ -178,6 +185,10 @@ function addPathReference(
     return;
   }
 
+  if (shouldIgnorePathReference(content, index, referenceType)) {
+    return;
+  }
+
   results.push({
     value,
     file,
@@ -185,4 +196,93 @@ function addPathReference(
     referenceType,
     sourceKind: "readme",
   });
+}
+
+function shouldIgnorePathReference(
+  content: string,
+  index: number,
+  referenceType: ExtractedPathReference["referenceType"],
+): boolean {
+  if (referenceType === "markdown-link") {
+    return false;
+  }
+
+  const lineText = getLineText(content, index);
+
+  if (hasActionVerb(lineText)) {
+    return false;
+  }
+
+  if (hasCatalogLeadIn(lineText)) {
+    return true;
+  }
+
+  return isStandaloneCodeList(lineText) && hasCatalogLeadInAbove(content, index);
+}
+
+function getLineText(content: string, index: number): string {
+  const start = content.lastIndexOf("\n", index - 1) + 1;
+  const end = content.indexOf("\n", index);
+  return content.slice(start, end === -1 ? undefined : end);
+}
+
+function hasActionVerb(line: string): boolean {
+  return actionVerbPattern.test(normalizeLine(line));
+}
+
+function hasCatalogLeadIn(line: string): boolean {
+  return catalogLeadInPattern.test(normalizeLine(line));
+}
+
+function isStandaloneCodeList(line: string): boolean {
+  return standaloneCodeListPattern.test(line.trim());
+}
+
+function normalizeLine(line: string): string {
+  return line
+    .replace(markdownNoisePattern, " ")
+    .replace(/`[^`\n]+`/g, " PATH ")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function hasCatalogLeadInAbove(content: string, index: number): boolean {
+  const currentLineStart = content.lastIndexOf("\n", index - 1) + 1;
+  const previousLines = content.slice(0, currentLineStart).split("\n");
+  if (previousLines.at(-1) === "") {
+    previousLines.pop();
+  }
+  let crossedBlankLine = false;
+
+  for (let lineIndex = previousLines.length - 1; lineIndex >= 0; lineIndex -= 1) {
+    const line = previousLines[lineIndex] ?? "";
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      if (crossedBlankLine) {
+        break;
+      }
+      crossedBlankLine = true;
+      continue;
+    }
+
+    if (trimmed.startsWith("#")) {
+      break;
+    }
+
+    if (hasCatalogLeadIn(trimmed)) {
+      return true;
+    }
+
+    if (crossedBlankLine && !isListLine(trimmed)) {
+      break;
+    }
+  }
+
+  return false;
+}
+
+function isListLine(line: string): boolean {
+  return /^(?:[-*+]\s+|\d+\.\s+)/u.test(line);
 }

@@ -1,0 +1,9 @@
+{
+  "name": "readme-catalog-regression",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsup",
+    "lint": "biome check ."
+  }
+}

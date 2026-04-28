@@ -126,6 +126,43 @@ describe("markdown extraction", () => {
     ]);
   });
 
+  test("ignores catalog-style path lists in docs", () => {
+    const catalogContent = [
+      "Supported files such as:",
+      "",
+      "- `AGENTS.md`",
+      "- `.github/copilot-instructions.md`",
+      "- `.cursor/mcp.json`",
+      "",
+      "The scanner currently scans instruction files, including `CLAUDE.md` and `.claude/mcp.json`.",
+    ].join("\n");
+
+    expect(extractPathReferences("README.md", catalogContent)).toEqual([]);
+  });
+
+  test("keeps actionable references even when examples are mentioned", () => {
+    const actionableContent = [
+      "Read files such as `docs/testing.md` and `docs/spec.md` before changes.",
+    ].join("\n");
+
+    expect(extractPathReferences("README.md", actionableContent)).toEqual([
+      {
+        value: "docs/spec.md",
+        file: "README.md",
+        line: 1,
+        referenceType: "inline-code",
+        sourceKind: "readme",
+      },
+      {
+        value: "docs/testing.md",
+        file: "README.md",
+        line: 1,
+        referenceType: "inline-code",
+        sourceKind: "readme",
+      },
+    ]);
+  });
+
   test("ignores package names, route prefixes, and placeholders", () => {
     const noisyContent = [
       "Use `spatie/laravel-permission`.",

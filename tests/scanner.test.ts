@@ -154,6 +154,14 @@ describe("scanRepository", () => {
 
     expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
   });
+
+  test("ignores README catalog examples that are not repository requirements", async () => {
+    const result = await scanRepository(
+      fixturePath("readme-catalog-regression"),
+    );
+
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
 });
 
 describe("getExitCode", () => {
