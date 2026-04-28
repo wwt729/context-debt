@@ -217,7 +217,9 @@ function shouldIgnorePathReference(
     return true;
   }
 
-  return isStandaloneCodeList(lineText) && hasCatalogLeadInAbove(content, index);
+  return (
+    isStandaloneCodeList(lineText) && hasCatalogLeadInAbove(content, index)
+  );
 }
 
 function getLineText(content: string, index: number): string {
@@ -255,7 +257,11 @@ function hasCatalogLeadInAbove(content: string, index: number): boolean {
   }
   let crossedBlankLine = false;
 
-  for (let lineIndex = previousLines.length - 1; lineIndex >= 0; lineIndex -= 1) {
+  for (
+    let lineIndex = previousLines.length - 1;
+    lineIndex >= 0;
+    lineIndex -= 1
+  ) {
     const line = previousLines[lineIndex] ?? "";
     const trimmed = line.trim();
 
