@@ -68,7 +68,7 @@ describe("runCli", () => {
           title: "Conflicting package manager guidance detected",
           severity: "HIGH",
           file: ".",
-          evidence: "npm (CLAUDE.md:3), pnpm (AGENTS.md:3)",
+          evidence: "npm -> CLAUDE.md:3; pnpm -> AGENTS.md:3, package.json",
           explanation:
             "Different files or project metadata recommend different package managers for the same repository.",
           recommendation:

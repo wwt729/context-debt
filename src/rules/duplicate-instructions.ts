@@ -5,6 +5,22 @@ import {
 } from "../utils/context-units.js";
 
 const minimumSharedUnits = 2;
+const sampleLimit = 3;
+const fileKindPriority: Record<
+  ScanContext["contextFiles"][number]["kind"],
+  number
+> = {
+  agents: 0,
+  claude: 1,
+  "cursor-rule": 2,
+  copilot: 3,
+  codex: 4,
+  windsurf: 5,
+  readme: 6,
+  "package-json": 7,
+  mcp: 8,
+  "project-meta": 9,
+};
 
 export const duplicateInstructionsRule: RuleModule = {
   id: "duplicate-instructions",
@@ -30,20 +46,21 @@ export const duplicateInstructionsRule: RuleModule = {
           continue;
         }
 
+        const canonicalFile = pickCanonicalFile(left, right);
+        const duplicateFile = canonicalFile.path === left.path ? right : left;
         issues.push({
           id: "duplicate-instructions",
           ruleId: "duplicate-instructions",
           title: "Two AI instruction files appear to duplicate each other",
           severity: "MEDIUM",
-          file: left.path,
-          evidence: `${left.path} and ${right.path} share ${Math.round(similarity.score * 100)}% normalized instruction overlap.`,
+          file: canonicalFile.path,
+          evidence: buildEvidence(left.path, right.path, similarity),
           explanation:
             "Multiple instruction files repeat the same guidance, which increases token cost and makes ownership unclear.",
-          recommendation:
-            "Keep shared repository-wide guidance in one canonical file and leave tool-specific files only for tool-specific behavior.",
-          sourceKind: left.kind,
-          confidence: 0.87,
-          relatedFiles: [right.path],
+          recommendation: `Keep the shared instruction block in ${canonicalFile.path} and trim the duplicate guidance from ${duplicateFile.path}.`,
+          sourceKind: canonicalFile.kind,
+          confidence: getDuplicateConfidence(similarity.score),
+          relatedFiles: [duplicateFile.path],
         });
       }
     }
@@ -51,3 +68,41 @@ export const duplicateInstructionsRule: RuleModule = {
     return issues;
   },
 };
+
+function buildEvidence(
+  leftPath: string,
+  rightPath: string,
+  similarity: ReturnType<typeof calculateUnitSimilarity>,
+): string {
+  const repeatedSections = similarity.samples
+    .slice(0, sampleLimit)
+    .map((sample) => `"${sample}"`)
+    .join(", ");
+
+  return `${leftPath} and ${rightPath} share ${Math.round(similarity.score * 100)}% normalized overlap, covering ${Math.round(similarity.leftCoverage * 100)}% of ${leftPath} and ${Math.round(similarity.rightCoverage * 100)}% of ${rightPath}. Repeated sections: ${repeatedSections}.`;
+}
+
+function pickCanonicalFile(
+  left: ScanContext["contextFiles"][number],
+  right: ScanContext["contextFiles"][number],
+): ScanContext["contextFiles"][number] {
+  const priorityDiff =
+    fileKindPriority[left.kind] - fileKindPriority[right.kind];
+  if (priorityDiff !== 0) {
+    return priorityDiff < 0 ? left : right;
+  }
+
+  return left.path.localeCompare(right.path) <= 0 ? left : right;
+}
+
+function getDuplicateConfidence(score: number): number {
+  if (score >= 0.9) {
+    return 0.92;
+  }
+
+  if (score >= 0.75) {
+    return 0.87;
+  }
+
+  return 0.8;
+}

@@ -343,11 +343,11 @@ Rule level semantics:
 | `dangerous-mcp-permission` | `HIGH` | MCP servers imply broad capability without enough scoping |
 | `referenced-file-missing` | `HIGH` / `MEDIUM` | AI docs point to missing local files, with severity based on confidence |
 | `contradictory-test-command` | `MEDIUM` | Different files recommend conflicting test commands |
-| `stale-reference` | `MEDIUM` | A referenced path appears stale after a rename |
+| `stale-reference` | `MEDIUM` | A deprecated-looking path is missing and a likely replacement path exists |
 | `oversized-context-file` | `MEDIUM` | A context file is too large for efficient prompt use |
-| `duplicate-instructions` | `MEDIUM` | Instruction blocks overlap heavily across files |
+| `duplicate-instructions` | `MEDIUM` | Instruction blocks overlap heavily across files, with repeated-section samples and a canonical file suggestion |
 | `too-many-global-rules` | `MEDIUM` | One global file carries too much policy |
-| `token-waste` | `LOW` | Long duplicated text wastes prompt budget |
+| `token-waste` | `LOW` | Long duplicated text wastes prompt budget, with estimated wasted tokens and top duplicate sources |
 | `repeated-negative-rules` | `LOW` | Repeated “do not” rules lower signal quality |
 | `missing-ai-context` | `LOW` | The repo has no primary AI context file |
 

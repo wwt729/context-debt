@@ -30,11 +30,10 @@ function buildIssue(
   uniqueScripts: Map<string, ScanContext["commands"]>,
 ): Issue {
   const evidence = [...uniqueScripts.entries()]
-    .map(([scriptName, commands]) => {
-      const first = commands[0];
-      return `${scriptName} (${first.file}:${first.line})`;
-    })
-    .join(", ");
+    .map(([scriptName, commands]) =>
+      formatCommandEvidence(scriptName, commands),
+    )
+    .join("; ");
 
   return {
     id: "contradictory-test-command",
@@ -55,4 +54,15 @@ function buildIssue(
       ),
     ],
   };
+}
+
+function formatCommandEvidence(
+  scriptName: string,
+  commands: ScanContext["commands"],
+): string {
+  const locations = commands
+    .map((command) => `${command.file}:${command.line}`)
+    .join(", ");
+
+  return `${scriptName} -> ${locations}`;
 }

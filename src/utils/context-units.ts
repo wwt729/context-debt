@@ -1,11 +1,18 @@
 import type { ContextFile, ScanContext } from "../core/types.js";
 
-type ContextUnit = {
+export type ContextUnit = {
   file: string;
   kind: ContextFile["kind"];
   normalized: string;
   raw: string;
   tokenCount: number;
+};
+
+export type DuplicateSourceSummary = {
+  duplicatedChars: number;
+  duplicatedTokens: number;
+  file: string;
+  repeatedBlocks: number;
 };
 
 const aiContextKinds = new Set([
@@ -78,27 +85,76 @@ export function calculateUnitSimilarity(
   left: ContextFile,
   right: ContextFile,
 ): {
+  duplicatedChars: number;
+  leftCoverage: number;
+  rightCoverage: number;
   samples: string[];
   score: number;
   sharedCount: number;
+  sharedUnits: ContextUnit[];
 } {
-  const leftUnits = new Set(
-    extractContextUnits(left).map((unit) => unit.normalized),
+  const leftUnits = extractContextUnits(left);
+  const rightUnits = extractContextUnits(right);
+  const leftByNormalized = indexUnitsByNormalized(leftUnits);
+  const rightByNormalized = indexUnitsByNormalized(rightUnits);
+  const sharedUnits = [...leftByNormalized.keys()]
+    .filter((normalized) => rightByNormalized.has(normalized))
+    .map((normalized) => leftByNormalized.get(normalized))
+    .filter((unit): unit is ContextUnit => unit !== undefined);
+  const sharedCount = sharedUnits.length;
+  const duplicatedChars = sharedUnits.reduce(
+    (total, unit) => total + unit.raw.length,
+    0,
   );
-  const rightUnits = new Set(
-    extractContextUnits(right).map((unit) => unit.normalized),
+  const leftCharTotal = leftUnits.reduce(
+    (total, unit) => total + unit.raw.length,
+    0,
   );
-  const shared = [...leftUnits].filter((unit) => rightUnits.has(unit));
+  const rightCharTotal = rightUnits.reduce(
+    (total, unit) => total + unit.raw.length,
+    0,
+  );
   const score =
-    leftUnits.size + rightUnits.size === 0
+    leftUnits.length + rightUnits.length === 0
       ? 0
-      : (2 * shared.length) / (leftUnits.size + rightUnits.size);
+      : (2 * sharedCount) / (leftUnits.length + rightUnits.length);
 
   return {
-    samples: shared.slice(0, 2),
+    duplicatedChars,
+    leftCoverage: leftCharTotal === 0 ? 0 : duplicatedChars / leftCharTotal,
+    rightCoverage: rightCharTotal === 0 ? 0 : duplicatedChars / rightCharTotal,
+    samples: sharedUnits.slice(0, 3).map((unit) => formatUnitSample(unit.raw)),
     score,
-    sharedCount: shared.length,
+    sharedCount,
+    sharedUnits,
   };
+}
+
+export function summarizeDuplicateSources(
+  duplicates: Map<string, ContextUnit[]>,
+): DuplicateSourceSummary[] {
+  const byFile = new Map<string, DuplicateSourceSummary>();
+
+  for (const entries of duplicates.values()) {
+    for (const entry of entries) {
+      const current = byFile.get(entry.file) ?? {
+        duplicatedChars: 0,
+        duplicatedTokens: 0,
+        file: entry.file,
+        repeatedBlocks: 0,
+      };
+      current.duplicatedChars += entry.raw.length;
+      current.duplicatedTokens += entry.tokenCount;
+      current.repeatedBlocks += 1;
+      byFile.set(entry.file, current);
+    }
+  }
+
+  return [...byFile.values()].sort(compareDuplicateSources);
+}
+
+export function estimateTokenWasteFromChars(chars: number): number {
+  return Math.ceil(chars / 4);
 }
 
 function flushParagraph(
@@ -147,4 +203,30 @@ function countApproxTokens(text: string): number {
 
 function isStandaloneUnit(line: string): boolean {
   return /^[-*]\s+/u.test(line) || /^\d+\.\s+/u.test(line);
+}
+
+function indexUnitsByNormalized(
+  units: ContextUnit[],
+): Map<string, ContextUnit> {
+  return new Map(units.map((unit) => [unit.normalized, unit]));
+}
+
+function formatUnitSample(raw: string): string {
+  const normalized = raw.replace(/\s+/gu, " ").trim();
+  if (normalized.length <= 60) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 57)}...`;
+}
+
+function compareDuplicateSources(
+  left: DuplicateSourceSummary,
+  right: DuplicateSourceSummary,
+): number {
+  return (
+    right.duplicatedChars - left.duplicatedChars ||
+    right.repeatedBlocks - left.repeatedBlocks ||
+    left.file.localeCompare(right.file)
+  );
 }

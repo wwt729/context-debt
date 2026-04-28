@@ -349,11 +349,11 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | `dangerous-mcp-permission` | `HIGH` | MCP 服务权限过宽且缺少足够范围限制 |
 | `referenced-file-missing` | `HIGH` / `MEDIUM` | AI 文档引用了不存在的本地文件，严重级别取决于置信度 |
 | `contradictory-test-command` | `MEDIUM` | 不同文件推荐了互相冲突的测试命令 |
-| `stale-reference` | `MEDIUM` | 引用路径看起来已经过期或被重命名 |
+| `stale-reference` | `MEDIUM` | 已废弃风格的路径不存在，且仓库里找到了可能的替代路径 |
 | `oversized-context-file` | `MEDIUM` | 单个上下文文件过大，不适合高效提示 |
-| `duplicate-instructions` | `MEDIUM` | 多个文件存在高重叠指令块 |
+| `duplicate-instructions` | `MEDIUM` | 多个文件存在高重叠指令块，并给出重复片段摘要与建议保留位置 |
 | `too-many-global-rules` | `MEDIUM` | 全局规则文件承担了过多策略 |
-| `token-waste` | `LOW` | 长段重复文本浪费上下文预算 |
+| `token-waste` | `LOW` | 长段重复文本浪费上下文预算，并给出估算 token 浪费与主要重复来源 |
 | `repeated-negative-rules` | `LOW` | 重复的否定规则拉低信息密度 |
 | `missing-ai-context` | `LOW` | 仓库缺少主 AI 上下文文件 |
 

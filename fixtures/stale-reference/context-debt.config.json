@@ -5,5 +5,8 @@
       "ignoreGlobs": [],
       "ignorePatterns": []
     }
+  },
+  "scan": {
+    "include": ["docs/**/*.md"]
   }
 }

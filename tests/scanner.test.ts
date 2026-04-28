@@ -41,6 +41,8 @@ describe("scanRepository", () => {
     );
     expect(result.summary.HIGH).toBe(1);
     expect(result.issues[0]?.id).toBe("conflicting-package-manager");
+    expect(result.issues[0]?.evidence).toContain("npm ->");
+    expect(result.issues[0]?.evidence).toContain("pnpm ->");
   });
 
   test("reports dangerous-mcp-permission as HIGH", async () => {
@@ -88,12 +90,15 @@ describe("scanRepository", () => {
     );
     expect(result.summary.MEDIUM).toBe(1);
     expect(result.issues[0]?.id).toBe("contradictory-test-command");
+    expect(result.issues[0]?.evidence).toContain("test ->");
   });
 
   test("reports stale-reference as MEDIUM", async () => {
     const result = await scanRepository(fixturePath("stale-reference"));
     expect(result.summary.MEDIUM).toBe(1);
     expect(result.issues[0]?.id).toBe("stale-reference");
+    expect(result.issues[0]?.evidence).toContain("docs/setup.md");
+    expect(result.issues[0]?.relatedFiles).toContain("docs/setup.md");
   });
 
   test("reports oversized-context-file as MEDIUM", async () => {
@@ -106,6 +111,9 @@ describe("scanRepository", () => {
     const result = await scanRepository(fixturePath("duplicate-instructions"));
     expect(result.summary.MEDIUM).toBe(1);
     expect(result.issues[0]?.id).toBe("duplicate-instructions");
+    expect(result.issues[0]?.file).toBe("AGENTS.md");
+    expect(result.issues[0]?.evidence).toContain("Repeated sections:");
+    expect(result.issues[0]?.recommendation).toContain("AGENTS.md");
   });
 
   test("reports token-waste as LOW", async () => {
@@ -114,6 +122,12 @@ describe("scanRepository", () => {
     expect(result.issues.some((issue) => issue.id === "token-waste")).toBe(
       true,
     );
+    const tokenWaste = result.issues.find(
+      (issue) => issue.id === "token-waste",
+    );
+    expect(tokenWaste?.evidence).toContain("wasted tokens");
+    expect(tokenWaste?.evidence).toContain("Top duplicate sources:");
+    expect(tokenWaste?.file).toBe("AGENTS.md");
   });
 
   test("reports repeated-negative-rules as LOW", async () => {

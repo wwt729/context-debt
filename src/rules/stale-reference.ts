@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { basename, extname } from "node:path";
 
 import type { Issue, RuleModule, ScanContext } from "../core/types.js";
 import {
@@ -14,33 +15,32 @@ export const staleReferenceRule: RuleModule = {
     return context.pathReferences
       .filter((reference) => reference.candidateKind === "local-file")
       .filter((reference) => isDeprecatedPath(reference.value))
-      .filter((reference) => !isIgnoredOrExisting(context, reference))
-      .map((reference) => buildIssue(context, reference));
+      .map((reference) => buildIssue(context, reference))
+      .filter((issue): issue is Issue => issue !== null);
   },
 };
-
-function isIgnoredOrExisting(
-  context: ScanContext,
-  reference: ScanContext["pathReferences"][number],
-): boolean {
-  const resolved = resolveReference(
-    context.rootDir,
-    reference.file,
-    reference.value,
-  );
-  return existsSync(resolved) || isGeneratedRuntimePath(reference.value);
-}
 
 function buildIssue(
   context: ScanContext,
   reference: ScanContext["pathReferences"][number],
-): Issue {
+): Issue | null {
   const resolved = resolveReference(
     context.rootDir,
     reference.file,
     reference.value,
   );
   const relativePath = normalizeResolvedPath(context.rootDir, resolved);
+  if (existsSync(resolved) || isGeneratedRuntimePath(reference.value)) {
+    return null;
+  }
+
+  const replacementCandidates = findReplacementCandidates(
+    context,
+    relativePath,
+  );
+  if (replacementCandidates.length === 0) {
+    return null;
+  }
 
   return {
     id: "stale-reference",
@@ -49,13 +49,43 @@ function buildIssue(
     severity: "MEDIUM",
     file: reference.file,
     line: reference.line,
-    evidence: `${reference.value} looks like a deprecated path and ${relativePath} does not exist.`,
+    evidence: `${reference.value} looks like a deprecated path, ${relativePath} does not exist, and similar current paths were found: ${replacementCandidates.join(", ")}.`,
     explanation:
       "AI instructions still reference a legacy-style path that appears to have been removed or renamed.",
-    recommendation:
-      "Remove the stale path from AI instructions or update it to the current repository location.",
+    recommendation: `Update the instruction to a current repository path such as ${replacementCandidates[0]}.`,
     sourceKind: reference.sourceKind,
-    confidence: 0.88,
+    confidence: 0.9,
     resolvedPath: relativePath,
+    relatedFiles: replacementCandidates,
   };
+}
+
+function findReplacementCandidates(
+  context: ScanContext,
+  relativePath: string,
+): string[] {
+  const targetBaseName = basename(relativePath);
+  const targetStem = stripExtension(targetBaseName);
+  const candidates = [...context.discoveredPaths]
+    .filter((path) => path !== relativePath)
+    .filter((path) => hasSameBaseName(path, targetBaseName, targetStem))
+    .sort((left, right) => left.localeCompare(right));
+
+  return candidates.slice(0, 3);
+}
+
+function hasSameBaseName(
+  candidatePath: string,
+  targetBaseName: string,
+  targetStem: string,
+): boolean {
+  const candidateBaseName = basename(candidatePath);
+  const candidateStem = stripExtension(candidateBaseName);
+
+  return candidateBaseName === targetBaseName || candidateStem === targetStem;
+}
+
+function stripExtension(value: string): string {
+  const extension = extname(value);
+  return extension.length > 0 ? value.slice(0, -extension.length) : value;
 }

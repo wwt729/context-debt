@@ -18,12 +18,10 @@ export const conflictingPackageManagerRule: RuleModule = {
     }
 
     const evidence = activeManagers
-      .map((manager) => {
-        const sources = managers.get(manager) ?? [];
-        const first = sources[0];
-        return `${manager} (${first.file}${first.line ? `:${first.line}` : ""})`;
-      })
-      .join(", ");
+      .map((manager) =>
+        formatManagerEvidence(manager, managers.get(manager) ?? []),
+      )
+      .join("; ");
 
     return [
       {
@@ -46,6 +44,17 @@ export const conflictingPackageManagerRule: RuleModule = {
     ];
   },
 };
+
+function formatManagerEvidence(
+  manager: PackageManagerName,
+  sources: ScanContext["packageManagers"],
+): string {
+  const locations = sources
+    .map((source) => `${source.file}${source.line ? `:${source.line}` : ""}`)
+    .join(", ");
+
+  return `${manager} -> ${locations}`;
+}
 
 function summarizeManagers(context: ScanContext) {
   const map = new Map<PackageManagerName, ScanContext["packageManagers"]>();
