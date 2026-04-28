@@ -2,11 +2,19 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
 
-import type { ContextDebtConfig, RuleSetting, ScanConfig } from "./types.js";
+import type {
+  ContextDebtConfig,
+  RuleLevel,
+  RuleSetting,
+  ScanConfig,
+  Severity,
+} from "./types.js";
 
 const severitySchema = z.enum(["HIGH", "MEDIUM", "LOW", "INFO"]);
+const ruleLevelSchema = z.enum(["off", "warn", "error"]);
 const ruleSettingSchema = z.object({
   enabled: z.boolean().optional(),
+  level: ruleLevelSchema.optional(),
   severity: severitySchema.optional(),
 });
 
@@ -103,4 +111,52 @@ export function getRuleSetting(
   ruleId: string,
 ): RuleSetting {
   return config.ruleSettings[ruleId] ?? {};
+}
+
+export function isRuleDisabled(setting: RuleSetting): boolean {
+  return setting.enabled === false || setting.level === "off";
+}
+
+export function resolveRuleSeverity(
+  setting: RuleSetting,
+  fallbackSeverity: Severity,
+): Severity {
+  if (setting.severity) {
+    return setting.severity;
+  }
+
+  if (setting.level === "error") {
+    return "HIGH";
+  }
+
+  if (setting.level === "warn") {
+    return "LOW";
+  }
+
+  return fallbackSeverity;
+}
+
+export function formatRuleSettingOverride(
+  ruleId: string,
+  setting: RuleSetting,
+): string {
+  const details = [
+    setting.enabled === false ? "enabled=false" : null,
+    setting.level ? `level=${setting.level}` : null,
+    setting.severity ? `severity=${setting.severity}` : null,
+  ].filter(Boolean);
+
+  return details.length > 0 ? `${ruleId} (${details.join(", ")})` : ruleId;
+}
+
+export function getRuleLevelLabel(level: RuleLevel): string {
+  if (level === "off") {
+    return "disabled";
+  }
+
+  if (level === "warn") {
+    return "non-blocking";
+  }
+
+  return "blocking";
 }

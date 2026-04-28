@@ -1,4 +1,5 @@
-import { getRuleSetting } from "./config.js";
+import { withDerivedIssueFields } from "./confidence.js";
+import { getRuleSetting, isRuleDisabled, resolveRuleSeverity } from "./config.js";
 import type { Issue, RuleModule, ScanContext } from "./types.js";
 
 export function runRuleWithSettings(
@@ -6,7 +7,7 @@ export function runRuleWithSettings(
   rule: RuleModule,
 ): Issue[] {
   const setting = getRuleSetting(context.config, rule.id);
-  if (setting.enabled === false) {
+  if (isRuleDisabled(setting)) {
     return [];
   }
 
@@ -17,12 +18,12 @@ function applyIssueSetting(
   issue: Issue,
   setting: { severity?: Issue["severity"] },
 ): Issue {
-  if (!setting.severity) {
-    return issue;
-  }
+  const nextIssue = setting.severity
+    ? { ...issue, severity: setting.severity }
+    : {
+        ...issue,
+        severity: resolveRuleSeverity(setting, issue.severity),
+      };
 
-  return {
-    ...issue,
-    severity: setting.severity,
-  };
+  return withDerivedIssueFields(nextIssue);
 }

@@ -9,13 +9,15 @@ import {
   getCommandCategory,
   getCommandManager,
 } from "./command-helpers.js";
-import { isLikelyLocalPath } from "./path-helpers.js";
+import { classifyPathCandidate } from "./path-helpers.js";
 import { getLineNumber, uniqueBy } from "./text.js";
 
 const markdownLinkPattern = /\[[^\]]+\]\(([^)]+)\)/g;
 const inlineCodePattern = /`([^`\n]+)`/g;
 const pathTokenPattern =
   /\b(?:read|open|see|check|review|use|edit|inspect)\s+((?:\.{0,2}\/|\.?[\w-]+\/)[^\s)`,:;]+)/gi;
+const flagValuePattern =
+  /--[\w-]+(?:=|\s+)((?:\.{0,2}\/|\/|\.?[\w-]+\/)[^\s)`,:;]+)/g;
 const explicitManagerPattern =
   /\b(?:use|prefer|install with|run with)\s+(pnpm|npm|yarn)\b/gi;
 const actionVerbPattern =
@@ -122,6 +124,18 @@ export function extractPathReferences(
     );
   }
 
+  for (const match of content.matchAll(flagValuePattern)) {
+    addPathReference(
+      results,
+      file,
+      content,
+      match[1],
+      match.index ?? 0,
+      false,
+      "instruction-text",
+    );
+  }
+
   return uniqueBy(
     results.sort(
       (left, right) =>
@@ -179,13 +193,15 @@ function addPathReference(
   allowSingleFile: boolean,
   referenceType: ExtractedPathReference["referenceType"],
 ): void {
-  const value = rawValue.trim();
+  const value = sanitizeReferenceValue(rawValue.trim());
+  const lineText = getLineText(content, index);
+  const candidateKind = classifyPathCandidate(value, lineText, allowSingleFile);
 
-  if (!isLikelyLocalPath(value, allowSingleFile)) {
-    return;
-  }
-
-  if (shouldIgnorePathReference(content, index, referenceType)) {
+  if (
+    candidateKind === "url" ||
+    candidateKind === "unknown" ||
+    shouldIgnorePathReference(content, index, referenceType)
+  ) {
     return;
   }
 
@@ -194,8 +210,13 @@ function addPathReference(
     file,
     line: getLineNumber(content, index),
     referenceType,
+    candidateKind,
     sourceKind: "readme",
   });
+}
+
+function sanitizeReferenceValue(value: string): string {
+  return value.replace(/[),.:;]+$/u, "");
 }
 
 function shouldIgnorePathReference(

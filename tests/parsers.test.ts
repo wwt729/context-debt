@@ -110,6 +110,7 @@ describe("markdown extraction", () => {
   test("extracts path references", () => {
     expect(extractPathReferences("AGENTS.md", content)).toEqual([
       {
+        candidateKind: "local-file",
         value: "docs/testing.md",
         file: "AGENTS.md",
         line: 6,
@@ -117,6 +118,7 @@ describe("markdown extraction", () => {
         sourceKind: "readme",
       },
       {
+        candidateKind: "local-file",
         value: "./docs/spec.md",
         file: "AGENTS.md",
         line: 7,
@@ -147,6 +149,7 @@ describe("markdown extraction", () => {
 
     expect(extractPathReferences("README.md", actionableContent)).toEqual([
       {
+        candidateKind: "local-file",
         value: "docs/spec.md",
         file: "README.md",
         line: 1,
@@ -154,6 +157,7 @@ describe("markdown extraction", () => {
         sourceKind: "readme",
       },
       {
+        candidateKind: "local-file",
         value: "docs/testing.md",
         file: "README.md",
         line: 1,
@@ -163,19 +167,54 @@ describe("markdown extraction", () => {
     ]);
   });
 
-  test("ignores package names, route prefixes, and placeholders", () => {
+  test("classifies non-local path candidates without treating them as local files", () => {
     const noisyContent = [
       "Use `spatie/laravel-permission`.",
       "Expose the route under `/ai`.",
       "Use `Http/Controllers/{Module}/` as a placeholder.",
+      "Run tests with --config configs/vitest.unit.json.",
+      "Use src/example.ts as an example.",
       "Read `docs/testing.md` first.",
     ].join("\n");
 
     expect(extractPathReferences("AGENTS.md", noisyContent)).toEqual([
       {
-        value: "docs/testing.md",
+        candidateKind: "package-reference",
+        value: "spatie/laravel-permission",
+        file: "AGENTS.md",
+        line: 1,
+        referenceType: "inline-code",
+        sourceKind: "readme",
+      },
+      {
+        candidateKind: "glob-pattern",
+        value: "Http/Controllers/{Module}/",
+        file: "AGENTS.md",
+        line: 3,
+        referenceType: "inline-code",
+        sourceKind: "readme",
+      },
+      {
+        candidateKind: "command-argument",
+        value: "configs/vitest.unit.json",
         file: "AGENTS.md",
         line: 4,
+        referenceType: "instruction-text",
+        sourceKind: "readme",
+      },
+      {
+        candidateKind: "example-path",
+        value: "src/example.ts",
+        file: "AGENTS.md",
+        line: 5,
+        referenceType: "instruction-text",
+        sourceKind: "readme",
+      },
+      {
+        candidateKind: "local-file",
+        value: "docs/testing.md",
+        file: "AGENTS.md",
+        line: 6,
         referenceType: "inline-code",
         sourceKind: "readme",
       },

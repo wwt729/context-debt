@@ -31,6 +31,11 @@ export const tokenWasteRule: RuleModule = {
           "Consolidate repeated instructions into a shared canonical file and reference it from tool-specific context files.",
         sourceKind: "project-meta",
         confidence: 0.82,
+        relatedFiles: [
+          ...new Set(
+            [...duplicates.values()].flat().map((entry) => entry.file),
+          ),
+        ],
       },
     ];
   },

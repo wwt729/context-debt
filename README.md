@@ -116,7 +116,7 @@ Options:
 
 - `--json`: convenience flag for JSON output
 - `--format <text|json>`: explicit output format
-- `--strict`: fail on `MEDIUM` and `HIGH`
+- `--strict`: fail on `HIGH` and high-confidence `MEDIUM`
 - `--no-color`: disable ANSI color
 - `--config <path>`: custom config file
 - `--max-issues <count>`: cap displayed issues while keeping full totals
@@ -140,10 +140,14 @@ context-debt doctor [path]
 
 Print discovery diagnostics for the repository:
 
+- config path
 - config status
+- effective include / exclude globs
+- configured rule overrides
 - package.json presence
 - discovered primary context files
 - detected MCP files
+- discovered paths
 - discovered file counts by kind
 
 ### `fix`
@@ -210,6 +214,7 @@ Interpretation:
 
 ```json
 {
+  "schemaVersion": "1.1",
   "tool": "context-debt",
   "version": "0.1.0",
   "displayedIssues": 2,
@@ -220,6 +225,7 @@ Interpretation:
     "LOW": 1,
     "INFO": 0
   },
+  "strictFailureCount": 1,
   "totalIssues": 4,
   "issues": [
     {
@@ -233,20 +239,22 @@ Interpretation:
       "explanation": "AI instructions point to a Node test command that cannot be resolved in package.json.",
       "recommendation": "Add scripts.test to package.json or update the instruction to the correct test command.",
       "sourceKind": "claude",
-      "confidence": 0.98
+      "confidence": 0.98,
+      "confidenceLabel": "high"
     },
     {
       "id": "referenced-file-missing",
       "ruleId": "referenced-file-missing",
       "title": "Referenced local file does not exist",
-      "severity": "HIGH",
+      "severity": "MEDIUM",
       "file": "AGENTS.md",
       "line": 7,
       "evidence": "docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.",
       "explanation": "AI instructions refer to a local file or path that is not present in the repository.",
       "recommendation": "Create the referenced file or update the instruction to point at an existing path.",
       "sourceKind": "agents",
-      "confidence": 0.9,
+      "confidence": 0.78,
+      "confidenceLabel": "medium",
       "resolvedPath": "docs/release-playbook.md"
     }
   ]
@@ -257,9 +265,13 @@ Useful fields:
 
 - `summary`: total issue counts by severity
 - `displayedIssues` vs `totalIssues`: affected by `--max-issues`
+- `schemaVersion`: stable JSON report schema version
+- `strictFailureCount`: how many issues would fail `--strict`
 - `confidence`: rule confidence score
+- `confidenceLabel`: stable confidence tier used by `--strict`
 - `sourceKind`: where the issue originated
 - `resolvedPath`: normalized resolved path when available
+- `relatedFiles`: additional files involved in a multi-file finding
 
 ## Configuration
 
@@ -269,10 +281,13 @@ Create `context-debt.config.json`:
 {
   "ruleSettings": {
     "missing-lint-script": {
-      "enabled": false
+      "level": "off"
     },
     "repeated-negative-rules": {
-      "severity": "MEDIUM"
+      "level": "warn"
+    },
+    "too-many-global-rules": {
+      "severity": "INFO"
     }
   },
   "rules": {
@@ -299,6 +314,7 @@ Configuration reference:
 | Key | Meaning |
 | --- | --- |
 | `ruleSettings.<rule-id>.enabled` | Disable a rule completely |
+| `ruleSettings.<rule-id>.level` | Stable alias: `off`, `warn`, or `error` |
 | `ruleSettings.<rule-id>.severity` | Override rule severity |
 | `rules.referencedFileMissing.ignorePaths` | Exact raw or repo-relative paths to ignore |
 | `rules.referencedFileMissing.ignoreGlobs` | Repo-relative glob patterns to ignore |
@@ -309,6 +325,13 @@ Configuration reference:
 | `thresholds.oversizedContextChars` | Character limit for `oversized-context-file` |
 | `thresholds.tokenWasteMinWords` | Minimum duplicated words before `token-waste` fires |
 
+Rule level semantics:
+
+- `off`: disable the rule
+- `warn`: force findings from that rule to `LOW`
+- `error`: force findings from that rule to `HIGH`
+- `severity`: explicit severity override, which takes precedence over `level`
+
 ## Rules
 
 | Rule | Severity | What it checks |
@@ -318,7 +341,7 @@ Configuration reference:
 | `missing-lint-script` | `HIGH` | AI docs reference a lint command missing from `package.json` |
 | `conflicting-package-manager` | `HIGH` | Instructions, lockfiles, and metadata disagree on npm/pnpm/yarn |
 | `dangerous-mcp-permission` | `HIGH` | MCP servers imply broad capability without enough scoping |
-| `referenced-file-missing` | `HIGH` | AI docs point to missing local files |
+| `referenced-file-missing` | `HIGH` / `MEDIUM` | AI docs point to missing local files, with severity based on confidence |
 | `contradictory-test-command` | `MEDIUM` | Different files recommend conflicting test commands |
 | `stale-reference` | `MEDIUM` | A referenced path appears stale after a rename |
 | `oversized-context-file` | `MEDIUM` | A context file is too large for efficient prompt use |
@@ -386,7 +409,7 @@ Minimal GitHub Actions step:
 Meaning:
 
 - fail CI on `HIGH`
-- fail CI on `MEDIUM` when `--strict` is enabled
+- fail CI on high-confidence `MEDIUM` when `--strict` is enabled
 - allow `LOW` and `INFO` to pass by default
 
 This repository also includes a full workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) covering:
@@ -415,7 +438,7 @@ The smoke script:
 ## Exit Codes
 
 - `0`: only `LOW` / `INFO`, or no issues
-- `1`: `HIGH`, or `MEDIUM` under `--strict`
+- `1`: `HIGH`, or high-confidence `MEDIUM` under `--strict`
 - `2`: runtime or config error
 
 ## Use Cases

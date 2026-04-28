@@ -1,0 +1,17 @@
+{
+  "ruleSettings": {
+    "missing-lint-script": {
+      "level": "off"
+    },
+    "repeated-negative-rules": {
+      "level": "warn"
+    },
+    "too-many-global-rules": {
+      "severity": "INFO"
+    }
+  },
+  "scan": {
+    "include": ["docs/**/*.md"],
+    "exclude": ["node_modules", "dist", "coverage", "tmp"]
+  }
+}

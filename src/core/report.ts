@@ -1,6 +1,7 @@
 import pc from "picocolors";
 
 import { TOOL_NAME, VERSION } from "./meta.js";
+import { JSON_SCHEMA_VERSION } from "./schema.js";
 import type {
   DoctorResult,
   FixResult,
@@ -46,11 +47,13 @@ export function formatTextReport(
 export function formatJsonReport(result: ScanResult): string {
   return `${JSON.stringify(
     {
+      schemaVersion: JSON_SCHEMA_VERSION,
       tool: TOOL_NAME,
       version: VERSION,
       displayedIssues: result.displayedIssues,
       scannedPath: result.scannedPath,
       summary: result.summary,
+      strictFailureCount: result.strictFailureCount,
       totalIssues: result.totalIssues,
       issues: result.issues,
     },
@@ -65,6 +68,7 @@ export function formatErrorReport(error: unknown, asJson: boolean): string {
   if (asJson) {
     return `${JSON.stringify(
       {
+        schemaVersion: JSON_SCHEMA_VERSION,
         tool: TOOL_NAME,
         version: VERSION,
         error: {
@@ -116,10 +120,18 @@ function formatIssue(issue: Issue): string[] {
 }
 
 export function formatDoctorReport(result: DoctorResult): string {
+  const ruleOverrides =
+    result.ruleOverrides.length > 0
+      ? result.ruleOverrides.map((entry) => entry.label ?? entry.ruleId).join(", ")
+      : "none";
   const lines = [
     "context-debt doctor",
     `Path: ${result.path}`,
+    `Config path: ${result.configPath}`,
     `Config: ${result.configStatus}`,
+    `Include globs: ${result.scanInclude.length > 0 ? result.scanInclude.join(", ") : "none"}`,
+    `Exclude globs: ${result.scanExclude.length > 0 ? result.scanExclude.join(", ") : "none"}`,
+    `Rule overrides: ${ruleOverrides}`,
     `Package.json: ${result.packageJsonPresent ? "present" : "missing"}`,
     `Primary context files: ${
       result.primaryContextFiles.length > 0
@@ -128,6 +140,7 @@ export function formatDoctorReport(result: DoctorResult): string {
     }`,
     `MCP files: ${result.mcpFiles.length > 0 ? result.mcpFiles.join(", ") : "none"}`,
     `Discovered files: ${result.discoveredCount}`,
+    `Discovered paths: ${result.discoveredFiles.length > 0 ? result.discoveredFiles.join(", ") : "none"}`,
     `Kinds: ${
       Object.entries(result.kindCounts)
         .filter(([, count]) => count > 0)

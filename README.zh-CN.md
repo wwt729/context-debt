@@ -116,7 +116,7 @@ context-debt scan [path]
 
 - `--json`：便捷 JSON 输出开关
 - `--format <text|json>`：显式指定输出格式
-- `--strict`：将 `MEDIUM` 与 `HIGH` 都视为失败
+- `--strict`：将 `HIGH` 和高置信度 `MEDIUM` 视为失败
 - `--no-color`：关闭彩色输出
 - `--config <path>`：指定自定义配置文件
 - `--max-issues <count>`：限制显示的问题数量，但保留完整汇总
@@ -140,10 +140,14 @@ context-debt doctor [path]
 
 输出仓库扫描发现与配置诊断信息：
 
+- config path
 - config status
+- 实际生效的 include / exclude globs
+- 已配置的规则覆盖项
 - package.json presence
 - discovered primary context files
 - detected MCP files
+- discovered paths
 - discovered file counts by kind
 
 适合排查：
@@ -216,6 +220,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 
 ```json
 {
+  "schemaVersion": "1.1",
   "tool": "context-debt",
   "version": "0.1.0",
   "displayedIssues": 2,
@@ -226,6 +231,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
     "LOW": 1,
     "INFO": 0
   },
+  "strictFailureCount": 1,
   "totalIssues": 4,
   "issues": [
     {
@@ -239,20 +245,22 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
       "explanation": "AI instructions point to a Node test command that cannot be resolved in package.json.",
       "recommendation": "Add scripts.test to package.json or update the instruction to the correct test command.",
       "sourceKind": "claude",
-      "confidence": 0.98
+      "confidence": 0.98,
+      "confidenceLabel": "high"
     },
     {
       "id": "referenced-file-missing",
       "ruleId": "referenced-file-missing",
       "title": "Referenced local file does not exist",
-      "severity": "HIGH",
+      "severity": "MEDIUM",
       "file": "AGENTS.md",
       "line": 7,
       "evidence": "docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.",
       "explanation": "AI instructions refer to a local file or path that is not present in the repository.",
       "recommendation": "Create the referenced file or update the instruction to point at an existing path.",
       "sourceKind": "agents",
-      "confidence": 0.9,
+      "confidence": 0.78,
+      "confidenceLabel": "medium",
       "resolvedPath": "docs/release-playbook.md"
     }
   ]
@@ -263,9 +271,13 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 
 - `summary`：各级别问题汇总
 - `displayedIssues` 与 `totalIssues`：可能受 `--max-issues` 影响
+- `schemaVersion`：稳定的 JSON 报告 schema 版本
+- `strictFailureCount`：开启 `--strict` 时会失败的问题数量
 - `confidence`：规则命中置信度
+- `confidenceLabel`：供 `--strict` 使用的稳定置信度分层
 - `sourceKind`：问题来源文件类型
 - `resolvedPath`：归一化后的解析路径
+- `relatedFiles`：多文件问题涉及的其它文件
 
 ## 配置
 
@@ -275,10 +287,13 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 {
   "ruleSettings": {
     "missing-lint-script": {
-      "enabled": false
+      "level": "off"
     },
     "repeated-negative-rules": {
-      "severity": "MEDIUM"
+      "level": "warn"
+    },
+    "too-many-global-rules": {
+      "severity": "INFO"
     }
   },
   "rules": {
@@ -305,6 +320,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | Key | 中文说明 |
 | --- | --- |
 | `ruleSettings.<rule-id>.enabled` | 完全关闭某条规则 |
+| `ruleSettings.<rule-id>.level` | 稳定别名：`off`、`warn`、`error` |
 | `ruleSettings.<rule-id>.severity` | 覆盖规则默认严重级别 |
 | `rules.referencedFileMissing.ignorePaths` | 忽略精确路径 |
 | `rules.referencedFileMissing.ignoreGlobs` | 忽略 glob 模式 |
@@ -315,6 +331,13 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | `thresholds.oversizedContextChars` | 上下文文件过大阈值 |
 | `thresholds.tokenWasteMinWords` | token 浪费最小重复词数 |
 
+`level` 语义：
+
+- `off`：关闭该规则
+- `warn`：将该规则的结果统一降为 `LOW`
+- `error`：将该规则的结果统一提升为 `HIGH`
+- `severity`：显式严重级别覆盖，优先级高于 `level`
+
 ## 规则列表
 
 | Rule | Severity | 中文说明 |
@@ -324,7 +347,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | `missing-lint-script` | `HIGH` | AI 文档引用了不存在的 lint 脚本 |
 | `conflicting-package-manager` | `HIGH` | 指令、锁文件与元数据对包管理器给出冲突信息 |
 | `dangerous-mcp-permission` | `HIGH` | MCP 服务权限过宽且缺少足够范围限制 |
-| `referenced-file-missing` | `HIGH` | AI 文档引用了不存在的本地文件 |
+| `referenced-file-missing` | `HIGH` / `MEDIUM` | AI 文档引用了不存在的本地文件，严重级别取决于置信度 |
 | `contradictory-test-command` | `MEDIUM` | 不同文件推荐了互相冲突的测试命令 |
 | `stale-reference` | `MEDIUM` | 引用路径看起来已经过期或被重命名 |
 | `oversized-context-file` | `MEDIUM` | 单个上下文文件过大，不适合高效提示 |
@@ -392,7 +415,7 @@ context-debt scan . --format json
 含义：
 
 - `HIGH` 直接让 CI 失败
-- `--strict` 下 `MEDIUM` 也会失败
+- `--strict` 下高置信度 `MEDIUM` 也会失败
 - 默认允许 `LOW` 和 `INFO` 通过
 
 当前仓库还提供了完整工作流 [.github/workflows/ci.yml](.github/workflows/ci.yml)，包含：
@@ -421,7 +444,7 @@ pnpm smoke:package
 ## 退出码
 
 - `0`：只有 `LOW` / `INFO`，或者无问题
-- `1`：存在 `HIGH`，或 `--strict` 下存在 `MEDIUM`
+- `1`：存在 `HIGH`，或 `--strict` 下存在高置信度 `MEDIUM`
 - `2`：运行时错误或配置错误
 
 ## 适用场景

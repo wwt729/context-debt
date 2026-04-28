@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 
+import { getConfidenceLabel } from "../core/confidence.js";
 import type { Issue, RuleModule, ScanContext } from "../core/types.js";
 import { isIgnoredReference } from "../utils/reference-ignore.js";
 import {
@@ -22,9 +23,12 @@ export const referencedFileMissingRule: RuleModule = {
       );
       const relativePath = normalizeResolvedPath(context.rootDir, resolved);
       const key = `${reference.file}:${reference.value}`;
+      const confidence = getReferenceConfidence(reference.referenceType);
+      const confidenceLabel = getConfidenceLabel(confidence);
 
       if (
         seen.has(key) ||
+        reference.candidateKind !== "local-file" ||
         existsSync(resolved) ||
         isGeneratedRuntimePath(reference.value) ||
         isIgnoredReference(context, reference.value, relativePath)
@@ -37,7 +41,7 @@ export const referencedFileMissingRule: RuleModule = {
         id: "referenced-file-missing",
         ruleId: "referenced-file-missing",
         title: "Referenced local file does not exist",
-        severity: "HIGH",
+        severity: confidenceLabel === "high" ? "HIGH" : "MEDIUM",
         file: reference.file,
         line: reference.line,
         evidence: `${reference.value} was referenced, but ${resolved} does not exist.`,
@@ -46,7 +50,8 @@ export const referencedFileMissingRule: RuleModule = {
         recommendation:
           "Create the referenced file or update the instruction to point at an existing path.",
         sourceKind: reference.sourceKind,
-        confidence: getReferenceConfidence(reference.referenceType),
+        confidence,
+        confidenceLabel,
         resolvedPath: relativePath,
       });
     }

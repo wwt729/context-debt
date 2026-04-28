@@ -132,7 +132,7 @@ async function handleScan(
       : formatTextReport(result, { color: options.color ?? true });
 
     io.stdout(output);
-    return getExitCode(result.summary, options.strict ?? false);
+    return getExitCode(result, options.strict ?? false);
   } catch (error) {
     io.stderr(formatErrorReport(error, options.json ?? false));
     return 2;

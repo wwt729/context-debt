@@ -1,5 +1,8 @@
-import type { ExtractedPathReference } from "../core/types.js";
-import { isDeprecatedPath } from "../utils/references.js";
+import type { PathCandidateKind } from "../core/types.js";
+import {
+  isDeprecatedPath,
+  isGeneratedRuntimePath,
+} from "../utils/references.js";
 
 const knownRootSegments = new Set([
   ".github",
@@ -70,15 +73,39 @@ export function isLikelyLocalPath(
   return knownRootSegments.has(value.split("/")[0] ?? "");
 }
 
-export function getReferenceType(
-  allowSingleFile: boolean,
+export function classifyPathCandidate(
   value: string,
-): ExtractedPathReference["referenceType"] {
-  if (value.startsWith("./") || value.startsWith("../")) {
-    return "markdown-link";
+  lineText: string,
+  allowSingleFile: boolean,
+): PathCandidateKind {
+  if (isUrl(value)) {
+    return "url";
   }
 
-  return allowSingleFile ? "inline-code" : "instruction-text";
+  if (isGlobPattern(value)) {
+    return "glob-pattern";
+  }
+
+  if (isGeneratedRuntimePath(value)) {
+    return "generated-file";
+  }
+
+  if (isCommandArgument(lineText, value)) {
+    return "command-argument";
+  }
+
+  if (isLikelyPackageName(value)) {
+    return "package-reference";
+  }
+
+  if (
+    isStrongExamplePath(lineText) ||
+    (isWeakExamplePath(lineText) && !hasActionVerb(lineText))
+  ) {
+    return "example-path";
+  }
+
+  return isLikelyLocalPath(value, allowSingleFile) ? "local-file" : "unknown";
 }
 
 function hasKnownFileExtension(value: string): boolean {
@@ -96,4 +123,43 @@ function isLikelyPackageName(value: string): boolean {
 
 function isLikelyRoutePrefix(value: string): boolean {
   return value.startsWith("/") && value.split("/").filter(Boolean).length <= 1;
+}
+
+function isUrl(value: string): boolean {
+  return value.startsWith("http://") || value.startsWith("https://");
+}
+
+function isGlobPattern(value: string): boolean {
+  return (
+    value.includes("*") ||
+    value.includes("{") ||
+    value.includes("}") ||
+    value.includes("[") ||
+    value.includes("]")
+  );
+}
+
+function isCommandArgument(lineText: string, value: string): boolean {
+  return new RegExp(
+    `--[\\w-]+(?:=|\\s+)${escapeRegExp(value)}(?:[\\s.,;:)]|$)`,
+    "u",
+  ).test(lineText);
+}
+
+function isStrongExamplePath(lineText: string): boolean {
+  return /\b(?:for example|e\.g\.)\b|as an example\b/iu.test(lineText);
+}
+
+function isWeakExamplePath(lineText: string): boolean {
+  return /\blike\b/iu.test(lineText);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+function hasActionVerb(lineText: string): boolean {
+  return /\b(?:read|open|see|check|review|use|edit|inspect|follow|update|create|compare|load|visit)\b/iu.test(
+    lineText,
+  );
 }

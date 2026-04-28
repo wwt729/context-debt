@@ -2,7 +2,13 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { runRules } from "../rules/index.js";
-import { getDefaultConfigPath, loadConfig, mergeScanConfig } from "./config.js";
+import { isStrictFailureIssue } from "./confidence.js";
+import {
+  formatRuleSettingOverride,
+  getDefaultConfigPath,
+  loadConfig,
+  mergeScanConfig,
+} from "./config.js";
 import { buildScanContext } from "./context.js";
 import {
   classifyContextFile,
@@ -38,6 +44,7 @@ export async function scanRepository(
     issues,
     summary: summarizeIssues(allIssues),
     scannedPath: inputPath,
+    strictFailureCount: countStrictFailureIssues(allIssues),
     totalIssues: allIssues.length,
   };
 }
@@ -51,12 +58,15 @@ export function summarizeIssues(issues: ScanResult["issues"]): ScanSummary {
   };
 }
 
-export function getExitCode(summary: ScanSummary, strict: boolean): number {
-  if (summary.HIGH > 0) {
+export function getExitCode(
+  result: Pick<ScanResult, "issues" | "summary">,
+  strict: boolean,
+): number {
+  if (result.summary.HIGH > 0) {
     return 1;
   }
 
-  if (strict && summary.MEDIUM > 0) {
+  if (strict && result.issues.some(isStrictFailureIssue)) {
     return 1;
   }
 
@@ -123,8 +133,10 @@ export async function diagnoseRepository(
     }
 
     return {
+      configPath,
       configStatus,
       discoveredCount: paths.length,
+      discoveredFiles: paths,
       kindCounts,
       mcpFiles: paths.filter((path) => classifyContextFile(path) === "mcp"),
       packageJsonPresent: paths.includes("package.json"),
@@ -137,12 +149,26 @@ export async function diagnoseRepository(
             : path === pattern,
         ),
       ),
+      scanExclude: config.scan.exclude,
+      scanInclude: config.scan.include,
+      ruleOverrides: Object.entries(config.ruleSettings)
+        .filter(([, setting]) => Object.keys(setting).length > 0)
+        .map(([ruleId, setting]) => ({
+          ruleId,
+          enabled: setting.enabled,
+          level: setting.level,
+          severity: setting.severity,
+          label: formatRuleSettingOverride(ruleId, setting),
+        }))
+        .sort((left, right) => left.ruleId.localeCompare(right.ruleId)),
     };
   } catch {
     configStatus = "invalid";
     return {
+      configPath,
       configStatus,
       discoveredCount: 0,
+      discoveredFiles: [],
       kindCounts: {
         agents: 0,
         claude: 0,
@@ -160,6 +186,13 @@ export async function diagnoseRepository(
       path: rootDir,
       pnpmVersion: null,
       primaryContextFiles: [],
+      scanExclude: [],
+      scanInclude: [],
+      ruleOverrides: [],
     };
   }
+}
+
+function countStrictFailureIssues(issues: ScanResult["issues"]): number {
+  return issues.filter(isStrictFailureIssue).length;
 }

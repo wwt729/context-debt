@@ -43,6 +43,7 @@ export const duplicateInstructionsRule: RuleModule = {
             "Keep shared repository-wide guidance in one canonical file and leave tool-specific files only for tool-specific behavior.",
           sourceKind: left.kind,
           confidence: 0.87,
+          relatedFiles: [right.path],
         });
       }
     }

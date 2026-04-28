@@ -39,6 +39,9 @@ export const conflictingPackageManagerRule: RuleModule = {
           "Choose one package manager and align AI instructions, lockfiles, and package.json packageManager.",
         sourceKind: "project-meta",
         confidence: 0.95,
+        relatedFiles: activeManagers.flatMap((manager) =>
+          (managers.get(manager) ?? []).map((entry) => entry.file),
+        ),
       },
     ];
   },

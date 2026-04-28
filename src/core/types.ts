@@ -1,4 +1,6 @@
 export type Severity = "HIGH" | "MEDIUM" | "LOW" | "INFO";
+export type ConfidenceLabel = "high" | "medium" | "low";
+export type RuleLevel = "off" | "warn" | "error";
 
 export type Issue = {
   id: string;
@@ -12,7 +14,9 @@ export type Issue = {
   recommendation: string;
   sourceKind: ContextFileKind;
   confidence: number;
+  confidenceLabel?: ConfidenceLabel;
   resolvedPath?: string;
+  relatedFiles?: string[];
   serverName?: string;
   autofixAvailable?: boolean;
 };
@@ -58,8 +62,19 @@ export type ExtractedPathReference = {
   file: string;
   line: number;
   referenceType: "markdown-link" | "inline-code" | "instruction-text";
+  candidateKind: PathCandidateKind;
   sourceKind: ContextFileKind;
 };
+
+export type PathCandidateKind =
+  | "local-file"
+  | "example-path"
+  | "glob-pattern"
+  | "package-reference"
+  | "command-argument"
+  | "generated-file"
+  | "url"
+  | "unknown";
 
 export type PackageManagerEvidence = {
   manager: PackageManagerName;
@@ -89,6 +104,7 @@ export type ReferencedFileMissingRuleConfig = {
 
 export type RuleSetting = {
   enabled?: boolean;
+  level?: RuleLevel;
   severity?: Severity;
 };
 
@@ -121,6 +137,7 @@ export type ScanResult = {
   issues: Issue[];
   summary: ScanSummary;
   scannedPath: string;
+  strictFailureCount: number;
   totalIssues: number;
 };
 
@@ -140,15 +157,28 @@ export type ScanOptions = {
   maxIssues?: number;
 };
 
+export type DoctorRuleOverride = {
+  enabled?: boolean;
+  label?: string;
+  level?: RuleLevel;
+  ruleId: string;
+  severity?: Severity;
+};
+
 export type DoctorResult = {
+  configPath: string;
   configStatus: "invalid" | "missing" | "valid";
   discoveredCount: number;
+  discoveredFiles: string[];
   kindCounts: Record<ContextFileKind, number>;
   mcpFiles: string[];
   packageJsonPresent: boolean;
   path: string;
   pnpmVersion: string | null;
   primaryContextFiles: string[];
+  scanExclude: string[];
+  scanInclude: string[];
+  ruleOverrides: DoctorRuleOverride[];
 };
 
 export type FixEdit = {

@@ -49,5 +49,6 @@ function buildIssue(
       "Align repository guidance on a single primary test command or clearly separate when each test command should be used.",
     sourceKind: "project-meta",
     confidence: 0.84,
+    relatedFiles: [...new Set([...uniqueScripts.values()].flat().map((command) => command.file))],
   };
 }

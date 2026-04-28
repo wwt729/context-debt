@@ -12,6 +12,7 @@ export const staleReferenceRule: RuleModule = {
   id: "stale-reference",
   check(context: ScanContext): Issue[] {
     return context.pathReferences
+      .filter((reference) => reference.candidateKind === "local-file")
       .filter((reference) => isDeprecatedPath(reference.value))
       .filter((reference) => !isIgnoredOrExisting(context, reference))
       .map((reference) => buildIssue(context, reference));

@@ -3,7 +3,11 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "vitest";
 
-import { getDefaultConfig, loadConfig } from "../src/core/config.js";
+import {
+  getDefaultConfig,
+  loadConfig,
+  resolveRuleSeverity,
+} from "../src/core/config.js";
 import { createTempDir } from "./helpers.js";
 
 describe("config", () => {
@@ -99,6 +103,41 @@ describe("config", () => {
     });
   });
 
+  test("loads rule level aliases", () => {
+    const dir = createTempDir("context-debt-config-");
+    const configPath = join(dir, "custom.json");
+
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        ruleSettings: {
+          "missing-lint-script": {
+            level: "off",
+          },
+          "repeated-negative-rules": {
+            level: "warn",
+          },
+          "missing-test-script": {
+            level: "error",
+          },
+        },
+      }),
+    );
+
+    const config = loadConfig(dir, "custom.json");
+    expect(config.ruleSettings).toEqual({
+      "missing-lint-script": {
+        level: "off",
+      },
+      "repeated-negative-rules": {
+        level: "warn",
+      },
+      "missing-test-script": {
+        level: "error",
+      },
+    });
+  });
+
   test("loads duplicate and token thresholds", () => {
     const dir = createTempDir("context-debt-config-");
     const configPath = join(dir, "custom.json");
@@ -120,5 +159,11 @@ describe("config", () => {
       oversizedContextChars: 9000,
       tokenWasteMinWords: 12,
     });
+  });
+
+  test("maps rule levels to stable effective severities", () => {
+    expect(resolveRuleSeverity({ level: "warn" }, "HIGH")).toBe("LOW");
+    expect(resolveRuleSeverity({ level: "error" }, "LOW")).toBe("HIGH");
+    expect(resolveRuleSeverity({ severity: "INFO" }, "HIGH")).toBe("INFO");
   });
 });

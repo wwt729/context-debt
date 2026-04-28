@@ -48,6 +48,7 @@ describe("runCli", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toBe("");
     expect(JSON.parse(result.stdout)).toEqual({
+      schemaVersion: "1.1",
       tool: "context-debt",
       version: VERSION,
       displayedIssues: 1,
@@ -58,6 +59,7 @@ describe("runCli", () => {
         LOW: 0,
         INFO: 0,
       },
+      strictFailureCount: 0,
       totalIssues: 1,
       issues: [
         {
@@ -73,6 +75,8 @@ describe("runCli", () => {
             "Choose one package manager and align AI instructions, lockfiles, and package.json packageManager.",
           sourceKind: "project-meta",
           confidence: 0.95,
+          confidenceLabel: "high",
+          relatedFiles: ["CLAUDE.md", "AGENTS.md", "package.json"],
         },
       ],
     });
@@ -110,12 +114,17 @@ describe("runCli", () => {
   });
 
   test("doctor reports discovery diagnostics", async () => {
-    const result = await runCliWithOutput(["doctor", fixturePath("safe-mcp")]);
+    const result = await runCliWithOutput([
+      "doctor",
+      fixturePath("doctor-configured"),
+    ]);
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("context-debt doctor");
-    expect(result.stdout).toContain(".cursor/mcp.json");
-    expect(result.stdout).toContain(".claude/mcp.json");
+    expect(result.stdout).toContain("context-debt.config.json");
+    expect(result.stdout).toContain("docs/**/*.md");
+    expect(result.stdout).toContain("missing-lint-script (level=off)");
+    expect(result.stdout).toContain("docs/custom.md");
   });
 
   test("accepts repeated include and exclude flags", async () => {

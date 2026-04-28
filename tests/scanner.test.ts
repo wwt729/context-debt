@@ -56,10 +56,11 @@ describe("scanRepository", () => {
     expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
   });
 
-  test("reports referenced-file-missing as HIGH", async () => {
+  test("reports referenced-file-missing as MEDIUM for heuristic text references", async () => {
     const result = await scanRepository(fixturePath("missing-reference"));
-    expect(result.summary.HIGH).toBe(1);
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 1, LOW: 0, INFO: 0 });
     expect(result.issues[0]?.id).toBe("referenced-file-missing");
+    expect(result.issues[0]?.confidenceLabel).toBe("medium");
   });
 
   test("returns clean summary for a healthy repo", async () => {
@@ -134,6 +135,11 @@ describe("scanRepository", () => {
     expect(result.issues[0]?.severity).toBe("MEDIUM");
   });
 
+  test("reports strict failure counts for high-confidence medium issues", async () => {
+    const result = await scanRepository(fixturePath("oversized-context-file"));
+    expect(result.strictFailureCount).toBe(1);
+  });
+
   test("keeps real-repo readme regressions focused on true missing references", async () => {
     const result = await scanRepository(
       fixturePath("real-repo-readme-regression"),
@@ -166,14 +172,106 @@ describe("scanRepository", () => {
 
 describe("getExitCode", () => {
   test("returns 1 when HIGH issues exist", () => {
-    expect(getExitCode({ HIGH: 1, MEDIUM: 0, LOW: 0, INFO: 0 }, false)).toBe(1);
+    expect(
+      getExitCode(
+        {
+          issues: [
+            {
+              id: "missing-test-script",
+              ruleId: "missing-test-script",
+              title: "missing",
+              severity: "HIGH",
+              file: "AGENTS.md",
+              evidence: "evidence",
+              explanation: "explanation",
+              recommendation: "recommendation",
+              sourceKind: "agents",
+              confidence: 0.98,
+              confidenceLabel: "high",
+            },
+          ],
+          summary: { HIGH: 1, MEDIUM: 0, LOW: 0, INFO: 0 },
+        },
+        false,
+      ),
+    ).toBe(1);
   });
 
-  test("returns 1 in strict mode when MEDIUM issues exist", () => {
-    expect(getExitCode({ HIGH: 0, MEDIUM: 1, LOW: 0, INFO: 0 }, true)).toBe(1);
+  test("returns 1 in strict mode when a high-confidence MEDIUM issue exists", () => {
+    expect(
+      getExitCode(
+        {
+          issues: [
+            {
+              id: "oversized-context-file",
+              ruleId: "oversized-context-file",
+              title: "oversized",
+              severity: "MEDIUM",
+              file: "AGENTS.md",
+              evidence: "evidence",
+              explanation: "explanation",
+              recommendation: "recommendation",
+              sourceKind: "agents",
+              confidence: 0.99,
+              confidenceLabel: "high",
+            },
+          ],
+          summary: { HIGH: 0, MEDIUM: 1, LOW: 0, INFO: 0 },
+        },
+        true,
+      ),
+    ).toBe(1);
+  });
+
+  test("returns 0 in strict mode when MEDIUM issues are not high-confidence", () => {
+    expect(
+      getExitCode(
+        {
+          issues: [
+            {
+              id: "referenced-file-missing",
+              ruleId: "referenced-file-missing",
+              title: "missing reference",
+              severity: "MEDIUM",
+              file: "AGENTS.md",
+              evidence: "evidence",
+              explanation: "explanation",
+              recommendation: "recommendation",
+              sourceKind: "agents",
+              confidence: 0.78,
+              confidenceLabel: "medium",
+            },
+          ],
+          summary: { HIGH: 0, MEDIUM: 1, LOW: 0, INFO: 0 },
+        },
+        true,
+      ),
+    ).toBe(0);
   });
 
   test("returns 0 for LOW-only issues", () => {
-    expect(getExitCode({ HIGH: 0, MEDIUM: 0, LOW: 1, INFO: 0 }, false)).toBe(0);
+    expect(
+      getExitCode(
+        {
+          issues: [
+            {
+              id: "token-waste",
+              ruleId: "token-waste",
+              title: "token waste",
+              severity: "LOW",
+              file: ".",
+              evidence: "evidence",
+              explanation: "explanation",
+              recommendation: "recommendation",
+              sourceKind: "project-meta",
+              confidence: 0.82,
+              confidenceLabel: "medium",
+            },
+          ],
+          summary: { HIGH: 0, MEDIUM: 0, LOW: 1, INFO: 0 },
+        },
+        false,
+      ),
+    ).toBe(0);
   });
 });
