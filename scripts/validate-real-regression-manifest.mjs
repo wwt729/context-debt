@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import fg from "fast-glob";
 
 import {
   formatThirdPartyFixtures,
@@ -28,6 +29,7 @@ for (const repo of manifest.repos) {
     repo.snapshotPath,
     `Missing regression snapshot: ${repo.snapshotPath}`,
   );
+  assertNoSymlinks(repo.fixturePath, repo.id);
   assertReasons(
     repo.triage.expectedTruePositives,
     repo.id,
@@ -78,4 +80,21 @@ function assertUnique(target, key, message) {
   }
 
   target.add(key);
+}
+
+function assertNoSymlinks(relativePath, repoId) {
+  const root = resolve(projectRoot, relativePath);
+  const entries = fg.sync(["**"], {
+    cwd: root,
+    dot: true,
+    followSymbolicLinks: false,
+    onlyFiles: false,
+  });
+
+  for (const entry of entries) {
+    const absolutePath = resolve(root, entry);
+    if (lstatSync(absolutePath).isSymbolicLink()) {
+      throw new Error(`${repoId} fixture contains a symlink: ${entry}`);
+    }
+  }
 }

@@ -167,7 +167,7 @@ function copyRelativePath(sourceRoot, fixtureRoot, relativePath) {
   const sourcePath = resolve(sourceRoot, relativePath);
   const targetPath = resolve(fixtureRoot, relativePath);
   mkdirSync(dirname(targetPath), { recursive: true });
-  cpSync(sourcePath, targetPath, { recursive: true });
+  cpSync(sourcePath, targetPath, { dereference: true, recursive: true });
 }
 
 function updateManifest(options, metadata, commit) {
