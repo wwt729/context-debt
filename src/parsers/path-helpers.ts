@@ -1,30 +1,12 @@
 import type { PathCandidateKind } from "../core/types.js";
 import {
+  hasKnownFileExtension,
+  knownRootSegments,
+} from "../utils/path-patterns.js";
+import {
   isDeprecatedPath,
   isGeneratedRuntimePath,
 } from "../utils/references.js";
-
-const knownRootSegments = new Set([
-  ".github",
-  ".cursor",
-  ".codex",
-  ".windsurf",
-  "app",
-  "src",
-  "lib",
-  "docs",
-  "routes",
-  "database",
-  "storage",
-  "config",
-  "tests",
-  "packages",
-  "public",
-  "resources",
-  "scripts",
-  "bin",
-  "cmd",
-]);
 
 export function isLikelyLocalPath(
   value: string,
@@ -98,6 +80,10 @@ export function classifyPathCandidate(
     return "package-reference";
   }
 
+  if (isLikelyDocsRoute(lineText, value)) {
+    return "unknown";
+  }
+
   if (
     isStrongExamplePath(lineText) ||
     (isWeakExamplePath(lineText) && !hasActionVerb(lineText))
@@ -106,12 +92,6 @@ export function classifyPathCandidate(
   }
 
   return isLikelyLocalPath(value, allowSingleFile) ? "local-file" : "unknown";
-}
-
-function hasKnownFileExtension(value: string): boolean {
-  return /\.(md|mdc|json|toml|yml|yaml|txt|js|ts|tsx|jsx|php|py|rs|go|java|sh|log)$/u.test(
-    value,
-  );
 }
 
 function isLikelyPackageName(value: string): boolean {
@@ -152,6 +132,20 @@ function isStrongExamplePath(lineText: string): boolean {
 
 function isWeakExamplePath(lineText: string): boolean {
   return /\blike\b/iu.test(lineText);
+}
+
+function isLikelyDocsRoute(lineText: string, value: string): boolean {
+  if (
+    !value.startsWith("/") ||
+    hasKnownFileExtension(value) ||
+    value.endsWith("/")
+  ) {
+    return false;
+  }
+
+  return /\b(?:linking internally|internal(?:ly)?\s+link|absolute\s+doc\s+paths?|doc\s+paths?|docs?\s+site|route|page path|mintlify)\b/iu.test(
+    lineText,
+  );
 }
 
 function escapeRegExp(value: string): string {

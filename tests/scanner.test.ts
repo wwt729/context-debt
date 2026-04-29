@@ -77,6 +77,16 @@ describe("scanRepository", () => {
     expect(result.issues[0]?.evidence).toContain("docs/missing.md");
   });
 
+  test("resolves bare filenames against the repo root when nested context files reference them", async () => {
+    const result = await scanRepository(fixturePath("root-fallback-reference"));
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
+
+  test("ignores docs-site absolute routes that are not repository file paths", async () => {
+    const result = await scanRepository(fixturePath("docs-route-reference"));
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
+
   test("supports configured ignores for missing references", async () => {
     const result = await scanRepository(
       fixturePath("missing-reference-configured"),

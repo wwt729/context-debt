@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "repos": [
+    {
+      "id": "ai-cursor-rules-001",
+      "category": "ai-heavy",
+      "source": {
+        "repo": "sparesparrow/cursor-rules",
+        "commit": "53c530729aa2b5d37d3f7b7a065fa022db813626",
+        "license": "GPL-3.0",
+        "url": "https://github.com/sparesparrow/cursor-rules"
+      },
+      "fixturePath": "regressions/repos/ai-cursor-rules-001",
+      "snapshotPath": "regressions/snapshots/ai-cursor-rules-001.json",
+      "notes": "Cursor rule catalog with duplicated domain overlays and Node command guidance.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "missing-build-script",
+            "file": ".cursor/rules/podman-desktop-extension/fullstack-extension-rules.mdc",
+            "severity": "HIGH",
+            "reason": "The rule file references npm build commands that are absent from the distilled package.json."
+          },
+          {
+            "ruleId": "missing-lint-script",
+            "file": ".cursor/rules/podman-desktop-extension/fullstack-extension-rules.mdc",
+            "severity": "HIGH",
+            "reason": "The rule file references npm lint:fix without a matching package.json script."
+          },
+          {
+            "ruleId": "missing-build-script",
+            "file": ".cursor/rules/podman-desktop-extension/hello-world-extension-rules.mdc",
+            "severity": "HIGH",
+            "reason": "The hello-world extension guide also points to a missing npm build script."
+          },
+          {
+            "ruleId": "duplicate-instructions",
+            "file": ".cursor/rules/01-base-agentic.mdc",
+            "severity": "MEDIUM",
+            "reason": "The repository duplicates the same base rule set across root and domain overlays."
+          },
+          {
+            "ruleId": "duplicate-instructions",
+            "file": ".cursor/rules/01-base-devops.mdc",
+            "severity": "MEDIUM",
+            "reason": "The repository duplicates the same base rule set across root and domain overlays."
+          },
+          {
+            "ruleId": "duplicate-instructions",
+            "file": ".cursor/rules/02-typescript.mdc",
+            "severity": "MEDIUM",
+            "reason": "The repository duplicates the same base rule set across root and domain overlays."
+          },
+          {
+            "ruleId": "duplicate-instructions",
+            "file": ".cursor/rules/domain/02-mcp-typescript.rules.mdc",
+            "severity": "MEDIUM",
+            "reason": "The MCP TypeScript guidance is duplicated between domain and MCP-specific rule packs."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": ".cursor/rules/domain/10-multi-modal-coordinator.rules.mdc",
+            "severity": "MEDIUM",
+            "reason": "The multi-modal coordinator rule exceeds the default prompt-size threshold."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": ".cursor/rules/mcp/mcp-integration-rules.mdc",
+            "severity": "MEDIUM",
+            "reason": "The MCP integration rules file exceeds the default prompt-size threshold."
+          },
+          {
+            "ruleId": "token-waste",
+            "file": ".cursor/rules/01-base-agentic.mdc",
+            "severity": "LOW",
+            "reason": "The duplicated Cursor rule packs create measurable repeated-token overhead."
+          },
+          {
+            "ruleId": "repeated-negative-rules",
+            "file": ".cursor/rules/mcp/mcp-core-rules.mdc",
+            "severity": "LOW",
+            "reason": "The MCP core rules repeat the same NEG-prefixed guidance block many times."
+          }
+        ],
+        "allowedFalsePositives": [],
+        "mustNotAppear": []
+      }
+    },
+    {
+      "id": "docs-openhands-001",
+      "category": "docs-heavy",
+      "source": {
+        "repo": "OpenHands/docs",
+        "commit": "b5b1768f1cf29d636ce88819b3dcde71c58ae80d",
+        "license": "UNKNOWN",
+        "url": "https://github.com/OpenHands/docs"
+      },
+      "fixturePath": "regressions/repos/docs-openhands-001",
+      "snapshotPath": "regressions/snapshots/docs-openhands-001.json",
+      "notes": "Documentation-heavy repo with route-style internal links and AGENTS guidance.",
+      "triage": {
+        "expectedTruePositives": [],
+        "allowedFalsePositives": [],
+        "mustNotAppear": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 153,
+            "resolvedPath": "overview/quickstart",
+            "reason": "Docs-site absolute routes should no longer be treated as missing repository files."
+          }
+        ]
+      }
+    },
+    {
+      "id": "mcp-abcdan-001",
+      "category": "mcp-heavy",
+      "source": {
+        "repo": "abcdan/mcp.json",
+        "commit": "b24707b3d4083e9ab0805ac1fa36a25c3e2c334c",
+        "license": "UNKNOWN",
+        "url": "https://github.com/abcdan/mcp.json"
+      },
+      "fixturePath": "regressions/repos/mcp-abcdan-001",
+      "snapshotPath": "regressions/snapshots/mcp-abcdan-001.json",
+      "notes": "Small MCP config repo with one network-capable server and no AGENTS-style files.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "dangerous-mcp-permission",
+            "file": "mcp.json",
+            "severity": "HIGH",
+            "line": 16,
+            "serverName": "atlassian",
+            "reason": "The MCP config exposes a network-oriented integration without nearby rationale or allowlists."
+          }
+        ],
+        "allowedFalsePositives": [
+          {
+            "ruleId": "missing-ai-context",
+            "file": ".",
+            "severity": "LOW",
+            "reason": "This repository is a config catalog rather than an agent-instruction repo, so missing AGENTS.md is acceptable."
+          }
+        ],
+        "mustNotAppear": []
+      }
+    },
+    {
+      "id": "monorepo-commonware-001",
+      "category": "monorepo",
+      "source": {
+        "repo": "commonwarexyz/monorepo",
+        "commit": "f63e0d039c622c46967484200d1bd652da3b8b97",
+        "license": "Apache-2.0",
+        "url": "https://github.com/commonwarexyz/monorepo"
+      },
+      "fixturePath": "regressions/repos/monorepo-commonware-001",
+      "snapshotPath": "regressions/snapshots/monorepo-commonware-001.json",
+      "notes": "Rust monorepo with synchronized AGENTS, CLAUDE, and Copilot instruction files.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "oversized-context-file",
+            "file": ".github/copilot-instructions.md",
+            "severity": "MEDIUM",
+            "reason": "The synchronized Copilot instructions are intentionally large and exceed the current threshold."
+          },
+          {
+            "ruleId": "duplicate-instructions",
+            "file": "AGENTS.md",
+            "severity": "MEDIUM",
+            "reason": "The repo intentionally synchronizes guidance across AGENTS, CLAUDE, and Copilot files, which still counts as duplicate prompt content."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": "AGENTS.md",
+            "severity": "MEDIUM",
+            "reason": "The primary AGENTS file exceeds the default prompt-size threshold."
+          },
+          {
+            "ruleId": "too-many-global-rules",
+            "file": "AGENTS.md",
+            "severity": "MEDIUM",
+            "reason": "The global AGENTS file carries a large amount of repository-wide policy."
+          },
+          {
+            "ruleId": "duplicate-instructions",
+            "file": "CLAUDE.md",
+            "severity": "MEDIUM",
+            "reason": "The repo intentionally synchronizes guidance across AGENTS, CLAUDE, and Copilot files, which still counts as duplicate prompt content."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": "CLAUDE.md",
+            "severity": "MEDIUM",
+            "reason": "The CLAUDE file exceeds the default prompt-size threshold."
+          },
+          {
+            "ruleId": "too-many-global-rules",
+            "file": "CLAUDE.md",
+            "severity": "MEDIUM",
+            "reason": "The CLAUDE file also carries a large amount of repository-wide policy."
+          },
+          {
+            "ruleId": "repeated-negative-rules",
+            "file": ".github/copilot-instructions.md",
+            "severity": "LOW",
+            "reason": "The synchronized instruction set repeats many NEG-style prohibitions across mirrored files."
+          },
+          {
+            "ruleId": "token-waste",
+            "file": "AGENTS.md",
+            "severity": "LOW",
+            "reason": "Keeping three synchronized global instruction files creates measurable repeated-token waste."
+          }
+        ],
+        "allowedFalsePositives": [],
+        "mustNotAppear": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": ".github/copilot-instructions.md",
+            "severity": "HIGH",
+            "line": 50,
+            "resolvedPath": ".github/Cargo.toml",
+            "reason": "Bare filenames in nested instruction files should resolve to an existing repo-root file when appropriate."
+          }
+        ]
+      }
+    }
+  ]
+}

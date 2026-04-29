@@ -3,7 +3,7 @@ import fg from "fast-glob";
 
 import type { ContextDebtConfig, ContextFileKind } from "./types.js";
 
-const basePatterns = [
+export const discoveryPatterns = [
   "AGENTS.md",
   "CLAUDE.md",
   ".cursor/rules/**/*.mdc",
@@ -43,7 +43,19 @@ export async function discoverPaths(
     entry.endsWith("/**") ? entry : `${entry}/**`,
   );
 
-  const entries = await fg([...basePatterns, ...config.scan.include], {
+  return discoverFromPatterns(
+    rootDir,
+    [...discoveryPatterns, ...config.scan.include],
+    ignore,
+  );
+}
+
+export async function discoverFromPatterns(
+  rootDir: string,
+  patterns: string[],
+  ignore: string[] = [],
+): Promise<string[]> {
+  const entries = await fg(patterns, {
     cwd: rootDir,
     dot: true,
     ignore,

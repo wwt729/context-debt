@@ -21,9 +21,12 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
+    "test:regressions": "vitest run tests/real-regressions.test.ts",
     "lint": "biome check .",
-    "check": "pnpm lint && pnpm test && pnpm build",
+    "check": "pnpm lint && pnpm test && pnpm build && pnpm validate:regressions",
     "smoke:package": "node scripts/smoke-package.mjs",
+    "snapshots:regressions": "node scripts/update-real-regression-snapshots.mjs",
+    "validate:regressions": "node scripts/validate-real-regression-manifest.mjs",
     "prepublishOnly": "pnpm check && pnpm smoke:package",
     "context-debt": "node dist/cli.js"
   },

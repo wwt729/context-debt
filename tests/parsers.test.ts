@@ -167,6 +167,14 @@ describe("markdown extraction", () => {
     ]);
   });
 
+  test("ignores absolute docs routes described as site links", () => {
+    const docsRouteContent = [
+      "When linking internally, prefer absolute doc paths like `/overview/quickstart`.",
+    ].join("\n");
+
+    expect(extractPathReferences("AGENTS.md", docsRouteContent)).toEqual([]);
+  });
+
   test("classifies non-local path candidates without treating them as local files", () => {
     const noisyContent = [
       "Use `spatie/laravel-permission`.",

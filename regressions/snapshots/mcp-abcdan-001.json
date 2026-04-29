@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "mcp-abcdan-001",
+  "summary": {
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 1,
+    "INFO": 0
+  },
+  "strictFailureCount": 0,
+  "issues": [
+    {
+      "ruleId": "dangerous-mcp-permission",
+      "severity": "HIGH",
+      "file": "mcp.json",
+      "line": 16,
+      "title": "Potentially risky MCP permission without explanation or allowlist",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": "atlassian"
+    },
+    {
+      "ruleId": "missing-ai-context",
+      "severity": "LOW",
+      "file": ".",
+      "line": null,
+      "title": "No primary AI instruction files found",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    }
+  ]
+}

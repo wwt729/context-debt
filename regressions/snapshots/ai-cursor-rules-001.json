@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-cursor-rules-001",
+  "summary": {
+    "HIGH": 5,
+    "MEDIUM": 6,
+    "LOW": 2,
+    "INFO": 0
+  },
+  "strictFailureCount": 6,
+  "issues": [
+    {
+      "ruleId": "missing-build-script",
+      "severity": "HIGH",
+      "file": ".cursor/rules/podman-desktop-extension/fullstack-extension-rules.mdc",
+      "line": 48,
+      "title": "Referenced build command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "missing-build-script",
+      "severity": "HIGH",
+      "file": ".cursor/rules/podman-desktop-extension/fullstack-extension-rules.mdc",
+      "line": 426,
+      "title": "Referenced build command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "missing-build-script",
+      "severity": "HIGH",
+      "file": ".cursor/rules/podman-desktop-extension/fullstack-extension-rules.mdc",
+      "line": 432,
+      "title": "Referenced build command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "missing-lint-script",
+      "severity": "HIGH",
+      "file": ".cursor/rules/podman-desktop-extension/fullstack-extension-rules.mdc",
+      "line": 441,
+      "title": "Referenced lint command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "missing-build-script",
+      "severity": "HIGH",
+      "file": ".cursor/rules/podman-desktop-extension/hello-world-extension-rules.mdc",
+      "line": 195,
+      "title": "Referenced build command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "duplicate-instructions",
+      "severity": "MEDIUM",
+      "file": ".cursor/rules/01-base-agentic.mdc",
+      "line": null,
+      "title": "Two AI instruction files appear to duplicate each other",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [".cursor/rules/domain/01-base-agentic.rules.mdc"],
+      "serverName": null
+    },
+    {
+      "ruleId": "duplicate-instructions",
+      "severity": "MEDIUM",
+      "file": ".cursor/rules/01-base-devops.mdc",
+      "line": null,
+      "title": "Two AI instruction files appear to duplicate each other",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [".cursor/rules/domain/01-base-devops.rules.mdc"],
+      "serverName": null
+    },
+    {
+      "ruleId": "duplicate-instructions",
+      "severity": "MEDIUM",
+      "file": ".cursor/rules/02-typescript.mdc",
+      "line": null,
+      "title": "Two AI instruction files appear to duplicate each other",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [".cursor/rules/domain/02-typescript.rules.mdc"],
+      "serverName": null
+    },
+    {
+      "ruleId": "duplicate-instructions",
+      "severity": "MEDIUM",
+      "file": ".cursor/rules/domain/02-mcp-typescript.rules.mdc",
+      "line": null,
+      "title": "Two AI instruction files appear to duplicate each other",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [".cursor/rules/mcp/mcp-typescript.mdc"],
+      "serverName": null
+    },
+    {
+      "ruleId": "oversized-context-file",
+      "severity": "MEDIUM",
+      "file": ".cursor/rules/domain/10-multi-modal-coordinator.rules.mdc",
+      "line": null,
+      "title": "Context file is unusually large",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "oversized-context-file",
+      "severity": "MEDIUM",
+      "file": ".cursor/rules/mcp/mcp-integration-rules.mdc",
+      "line": null,
+      "title": "Context file is unusually large",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "token-waste",
+      "severity": "LOW",
+      "file": ".cursor/rules/01-base-agentic.mdc",
+      "line": null,
+      "title": "Repeated instructions are wasting context budget",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": [
+        ".cursor/rules/domain/02-mcp-typescript.rules.mdc",
+        ".cursor/rules/mcp/mcp-typescript.mdc"
+      ],
+      "serverName": null
+    },
+    {
+      "ruleId": "repeated-negative-rules",
+      "severity": "LOW",
+      "file": ".cursor/rules/mcp/mcp-core-rules.mdc",
+      "line": 310,
+      "title": "The same negative instruction is repeated multiple times",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    }
+  ]
+}
