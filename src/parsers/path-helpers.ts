@@ -12,7 +12,11 @@ export function isLikelyLocalPath(
   value: string,
   allowSingleFile: boolean,
 ): boolean {
-  if (value.startsWith("http://") || value.startsWith("https://")) {
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    hasSchemeLikePrefix(value)
+  ) {
     return false;
   }
 
@@ -37,7 +41,7 @@ export function isLikelyLocalPath(
   }
 
   if (value.startsWith("/")) {
-    return value.split("/").filter(Boolean).length > 1;
+    return isLikelyAbsoluteRepoPath(value);
   }
 
   if (isDeprecatedPath(value)) {
@@ -106,7 +110,11 @@ function isLikelyRoutePrefix(value: string): boolean {
 }
 
 function isUrl(value: string): boolean {
-  return value.startsWith("http://") || value.startsWith("https://");
+  return (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    hasSchemeLikePrefix(value)
+  );
 }
 
 function isGlobPattern(value: string): boolean {
@@ -156,4 +164,27 @@ function hasActionVerb(lineText: string): boolean {
   return /\b(?:read|open|see|check|review|use|edit|inspect|follow|update|create|compare|load|visit)\b/iu.test(
     lineText,
   );
+}
+
+function hasSchemeLikePrefix(value: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:[^/\\]/iu.test(value);
+}
+
+function isLikelyAbsoluteRepoPath(value: string): boolean {
+  const normalized = value.replace(/^\/+/, "");
+  const [firstSegment] = normalized.split("/");
+
+  if (!firstSegment) {
+    return false;
+  }
+
+  if (hasKnownFileExtension(normalized)) {
+    return true;
+  }
+
+  if (value.endsWith("/")) {
+    return knownRootSegments.has(firstSegment);
+  }
+
+  return knownRootSegments.has(firstSegment);
 }

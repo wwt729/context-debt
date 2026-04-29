@@ -1,4 +1,5 @@
 import type { Issue, RuleModule, ScanContext } from "../core/types.js";
+import { hasMatchingScript } from "./script-resolution.js";
 
 type ScriptRuleOptions = {
   category: "test" | "build" | "lint";
@@ -12,7 +13,7 @@ export function createMissingScriptIssues(
 ): Issue[] {
   return context.commands
     .filter((command) => command.category === options.category)
-    .filter((command) => !context.packageJson?.scripts[command.scriptName])
+    .filter((command) => !hasMatchingScript(context, command))
     .map((command) => ({
       id: options.ruleId,
       ruleId: options.ruleId,

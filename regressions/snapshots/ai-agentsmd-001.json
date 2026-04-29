@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-agentsmd-001",
+  "summary": {
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 0
+  },
+  "strictFailureCount": 0,
+  "issues": [
+    {
+      "ruleId": "conflicting-package-manager",
+      "severity": "HIGH",
+      "file": ".",
+      "line": null,
+      "title": "Conflicting package manager guidance detected",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": ["AGENTS.md", "package.json", "pnpm-lock.yaml"],
+      "serverName": null
+    }
+  ]
+}

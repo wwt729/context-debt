@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-openhands-001",
+  "summary": {
+    "HIGH": 5,
+    "MEDIUM": 2,
+    "LOW": 1,
+    "INFO": 0
+  },
+  "strictFailureCount": 1,
+  "issues": [
+    {
+      "ruleId": "missing-lint-script",
+      "severity": "HIGH",
+      "file": "AGENTS.md",
+      "line": 156,
+      "title": "Referenced lint command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "missing-lint-script",
+      "severity": "HIGH",
+      "file": "AGENTS.md",
+      "line": 157,
+      "title": "Referenced lint command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "missing-test-script",
+      "severity": "HIGH",
+      "file": "AGENTS.md",
+      "line": 163,
+      "title": "Referenced test command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "AGENTS.md",
+      "line": 481,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "tests/sdk/llm/test_llm_secret_source_api_key.py",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "AGENTS.md",
+      "line": 481,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "tests/workspace/test_cloud_workspace_sdk_settings.py",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "oversized-context-file",
+      "severity": "MEDIUM",
+      "file": "AGENTS.md",
+      "line": null,
+      "title": "Context file is unusually large",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "too-many-global-rules",
+      "severity": "MEDIUM",
+      "file": "AGENTS.md",
+      "line": null,
+      "title": "Global instruction file has too many broad rules",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "token-waste",
+      "severity": "LOW",
+      "file": "AGENTS.md",
+      "line": null,
+      "title": "Repeated instructions are wasting context budget",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    }
+  ]
+}

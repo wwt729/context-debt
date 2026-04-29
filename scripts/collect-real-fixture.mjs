@@ -77,16 +77,8 @@ function assertRequired(value, message) {
 }
 
 async function fetchJson(url) {
-  return JSON.parse(
-    runCommandWithOutput("curl", [
-      "-sL",
-      "-H",
-      "User-Agent: context-debt-regression-fixture",
-      "-H",
-      "Accept: application/vnd.github+json",
-      url,
-    ]),
-  );
+  const endpoint = toGitHubApiEndpoint(url);
+  return JSON.parse(runCommandWithOutput("gh", ["api", endpoint]));
 }
 
 function downloadRepository(repo, commit, tempDir) {
@@ -236,4 +228,14 @@ function toShellCommand(command, args) {
 
 function quoteShellArg(value) {
   return `'${value.replaceAll("'", `'\\''`)}'`;
+}
+
+function toGitHubApiEndpoint(url) {
+  const parsed = new URL(url);
+
+  if (parsed.hostname !== "api.github.com") {
+    throw new Error(`Unsupported GitHub API URL: ${url}`);
+  }
+
+  return `${parsed.pathname}${parsed.search}`;
 }

@@ -11,6 +11,7 @@ import type {
   ContextDebtConfig,
   ContextFile,
   PackageManagerEvidence,
+  ParsedPackageJson,
   ScanContext,
 } from "./types.js";
 
@@ -22,6 +23,7 @@ export async function buildScanContext(
   const contextFiles: ContextFile[] = [];
   const commands: ScanContext["commands"] = [];
   const pathReferences: ScanContext["pathReferences"] = [];
+  const packageJsons: ParsedPackageJson[] = [];
   const packageManagers: PackageManagerEvidence[] = [];
   const discoveredPaths = new Set(discovered);
   let packageJson: ScanContext["packageJson"];
@@ -34,14 +36,20 @@ export async function buildScanContext(
     contextFiles.push({ path: relativePath, kind, content });
 
     if (kind === "package-json") {
-      packageJson = parsePackageJson(relativePath, content);
-      if (packageJson.packageManager) {
-        const [manager] = packageJson.packageManager.split("@");
+      const parsedPackageJson = parsePackageJson(relativePath, content);
+      packageJsons.push(parsedPackageJson);
+
+      if (relativePath === "package.json") {
+        packageJson = parsedPackageJson;
+      }
+
+      if (relativePath === "package.json" && parsedPackageJson.packageManager) {
+        const [manager] = parsedPackageJson.packageManager.split("@");
         if (manager === "npm" || manager === "pnpm" || manager === "yarn") {
           packageManagers.push({
             manager,
             file: relativePath,
-            evidence: packageJson.packageManager,
+            evidence: parsedPackageJson.packageManager,
             source: "package-json",
             sourceKind: "package-json",
           });
@@ -104,6 +112,7 @@ export async function buildScanContext(
     rootDir,
     contextFiles,
     packageJson,
+    packageJsons,
     commands,
     pathReferences,
     packageManagers,

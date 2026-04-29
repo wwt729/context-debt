@@ -11,7 +11,7 @@ export const discoveryPatterns = [
   ".codex/**/*.md",
   ".windsurf/**/*.md",
   "README.md",
-  "package.json",
+  "**/package.json",
   "pnpm-lock.yaml",
   "package-lock.json",
   "yarn.lock",
@@ -95,7 +95,7 @@ export function classifyContextFile(filePath: string): ContextFileKind {
     return "readme";
   }
 
-  if (filePath === "package.json") {
+  if (filePath === "package.json" || filePath.endsWith("/package.json")) {
     return "package-json";
   }
 

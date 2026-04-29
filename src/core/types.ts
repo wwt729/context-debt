@@ -123,6 +123,7 @@ export type ScanContext = {
   rootDir: string;
   contextFiles: ContextFile[];
   packageJson?: ParsedPackageJson;
+  packageJsons: ParsedPackageJson[];
   commands: ExtractedCommand[];
   pathReferences: ExtractedPathReference[];
   packageManagers: PackageManagerEvidence[];

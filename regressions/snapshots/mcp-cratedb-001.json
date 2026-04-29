@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "mcp-cratedb-001",
+  "summary": {
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 1,
+    "INFO": 0
+  },
+  "strictFailureCount": 0,
+  "issues": [
+    {
+      "ruleId": "missing-ai-context",
+      "severity": "LOW",
+      "file": ".",
+      "line": null,
+      "title": "No primary AI instruction files found",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-squirrelogic-001",
+  "summary": {
+    "HIGH": 2,
+    "MEDIUM": 0,
+    "LOW": 1,
+    "INFO": 0
+  },
+  "strictFailureCount": 0,
+  "issues": [
+    {
+      "ruleId": "missing-test-script",
+      "severity": "HIGH",
+      "file": ".cursor/rules/git-commit-workflow.mdc",
+      "line": 78,
+      "title": "Referenced test command has no matching script",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "README.md",
+      "line": 90,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "CODE_OF_CONDUCT.md",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "token-waste",
+      "severity": "LOW",
+      "file": ".cursor/rules/cursor-rules-location.mdc",
+      "line": null,
+      "title": "Repeated instructions are wasting context budget",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": [
+        ".cursor/rules/file-organization.mdc",
+        ".cursor/rules/naming-conventions.mdc"
+      ],
+      "serverName": null
+    }
+  ]
+}

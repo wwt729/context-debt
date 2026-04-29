@@ -2,6 +2,46 @@
   "schemaVersion": 1,
   "repos": [
     {
+      "id": "ai-agentsmd-001",
+      "category": "ai-heavy",
+      "source": {
+        "repo": "agentsmd/agents.md",
+        "commit": "d1ac7f063d20e70015ed6732664049ae4ba9d74e",
+        "license": "MIT",
+        "url": "https://github.com/agentsmd/agents.md"
+      },
+      "fixturePath": "regressions/repos/ai-agentsmd-001",
+      "snapshotPath": "regressions/snapshots/ai-agentsmd-001.json",
+      "notes": "AGENTS.md spec repo with sample blocks in README and a lightweight website package.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "conflicting-package-manager",
+            "file": ".",
+            "severity": "HIGH",
+            "reason": "The repo uses pnpm in package metadata and lockfile while AGENTS guidance still recommends npm commands."
+          }
+        ],
+        "allowedFalsePositives": [],
+        "mustNotAppear": [
+          {
+            "ruleId": "missing-test-script",
+            "file": "README.md",
+            "severity": "HIGH",
+            "line": 24,
+            "reason": "Commands inside the sample AGENTS.md code fence should not be treated as repository instructions."
+          },
+          {
+            "ruleId": "missing-test-script",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 36,
+            "reason": "Optional recap commands marked if present should not fail the missing script rule."
+          }
+        ]
+      }
+    },
+    {
       "id": "ai-cursor-rules-001",
       "category": "ai-heavy",
       "source": {
@@ -87,6 +127,159 @@
       }
     },
     {
+      "id": "ai-openhands-001",
+      "category": "ai-heavy",
+      "source": {
+        "repo": "OpenHands/OpenHands",
+        "commit": "85b959d88390ba38d5944b6657144e4fac83c8fb",
+        "license": "NOASSERTION",
+        "url": "https://github.com/OpenHands/OpenHands"
+      },
+      "fixturePath": "regressions/repos/ai-openhands-001",
+      "snapshotPath": "regressions/snapshots/ai-openhands-001.json",
+      "notes": "Large Python-first AGENTS file with frontend and extension subproject instructions plus local troubleshooting notes.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "missing-lint-script",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 156,
+            "reason": "The AGENTS file points VSCode extension lint commands at a subproject path that has no package.json in the pinned commit."
+          },
+          {
+            "ruleId": "missing-lint-script",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 157,
+            "reason": "The AGENTS file points VSCode extension lint checks at a subproject path that has no package.json in the pinned commit."
+          },
+          {
+            "ruleId": "missing-test-script",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 163,
+            "reason": "The AGENTS file points VSCode extension tests at a subproject path that has no package.json in the pinned commit."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 481,
+            "resolvedPath": "tests/sdk/llm/test_llm_secret_source_api_key.py",
+            "reason": "The AGENTS file names a test file that is absent in the pinned upstream commit."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 481,
+            "resolvedPath": "tests/workspace/test_cloud_workspace_sdk_settings.py",
+            "reason": "The AGENTS file names a workspace test file that is absent in the pinned upstream commit."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": "AGENTS.md",
+            "severity": "MEDIUM",
+            "reason": "The primary AGENTS file is large enough to exceed the default context-size threshold."
+          },
+          {
+            "ruleId": "too-many-global-rules",
+            "file": "AGENTS.md",
+            "severity": "MEDIUM",
+            "reason": "The repository-wide AGENTS file carries a broad policy surface across multiple subprojects."
+          },
+          {
+            "ruleId": "token-waste",
+            "file": "AGENTS.md",
+            "severity": "LOW",
+            "reason": "The AGENTS file repeats enough guidance to trigger the token-waste heuristic."
+          }
+        ],
+        "allowedFalsePositives": [],
+        "mustNotAppear": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 20,
+            "resolvedPath": "api/v1/settings",
+            "reason": "Absolute API routes in troubleshooting notes should not be interpreted as missing repository files."
+          },
+          {
+            "ruleId": "missing-test-script",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 132,
+            "reason": "Frontend test commands should resolve against the nested frontend package.json."
+          },
+          {
+            "ruleId": "missing-build-script",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 427,
+            "reason": "Commands with an explicit cd frontend prefix should resolve against the nested frontend package.json."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ai-squirrelogic-001",
+      "category": "ai-heavy",
+      "source": {
+        "repo": "squirrelogic/cursor-rules",
+        "commit": "19cee67f7fb338da4af3a0ad704331486dfb97d8",
+        "license": "MIT",
+        "url": "https://github.com/squirrelogic/cursor-rules"
+      },
+      "fixturePath": "regressions/repos/ai-squirrelogic-001",
+      "snapshotPath": "regressions/snapshots/ai-squirrelogic-001.json",
+      "notes": "Cursor rule pack with workflow documentation, template examples, and lightweight repo metadata.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "README.md",
+            "severity": "HIGH",
+            "line": 90,
+            "resolvedPath": "CODE_OF_CONDUCT.md",
+            "reason": "The README links to a code-of-conduct file that is absent in the pinned upstream commit."
+          },
+          {
+            "ruleId": "token-waste",
+            "file": ".cursor/rules/cursor-rules-location.mdc",
+            "severity": "LOW",
+            "reason": "The rule set repeats overlapping location guidance across multiple Cursor rule files."
+          }
+        ],
+        "allowedFalsePositives": [
+          {
+            "ruleId": "missing-test-script",
+            "file": ".cursor/rules/git-commit-workflow.mdc",
+            "severity": "HIGH",
+            "line": 78,
+            "reason": "This generic workflow rule describes a conventional pre-commit flow rather than scripts that belong to the catalog repo itself."
+          }
+        ],
+        "mustNotAppear": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "README.md",
+            "severity": "HIGH",
+            "resolvedPath": "mdc:CONTRIBUTING.md",
+            "reason": "Scheme-like Cursor placeholders should not be treated as missing local files."
+          },
+          {
+            "ruleId": "missing-build-script",
+            "file": ".cursor/rules/git-commit-workflow.mdc",
+            "severity": "HIGH",
+            "line": 126,
+            "reason": "Commands inside the examples section should not be treated as repository build requirements."
+          }
+        ]
+      }
+    },
+    {
       "id": "docs-openhands-001",
       "category": "docs-heavy",
       "source": {
@@ -142,6 +335,31 @@
             "file": ".",
             "severity": "LOW",
             "reason": "This repository is a config catalog rather than an agent-instruction repo, so missing AGENTS.md is acceptable."
+          }
+        ],
+        "mustNotAppear": []
+      }
+    },
+    {
+      "id": "mcp-cratedb-001",
+      "category": "mcp-heavy",
+      "source": {
+        "repo": "crate/cratedb-mcp",
+        "commit": "546e17b2cca50af1d1d4ce9466d721193e4de220",
+        "license": "Apache-2.0",
+        "url": "https://github.com/crate/cratedb-mcp"
+      },
+      "fixturePath": "regressions/repos/mcp-cratedb-001",
+      "snapshotPath": "regressions/snapshots/mcp-cratedb-001.json",
+      "notes": "MCP server repository with pyproject metadata and no AGENTS-style instruction files.",
+      "triage": {
+        "expectedTruePositives": [],
+        "allowedFalsePositives": [
+          {
+            "ruleId": "missing-ai-context",
+            "file": ".",
+            "severity": "LOW",
+            "reason": "This MCP implementation repo ships project metadata but no agent-facing instruction files, which is acceptable for the current sample."
           }
         ],
         "mustNotAppear": []

@@ -175,10 +175,19 @@ describe("markdown extraction", () => {
     expect(extractPathReferences("AGENTS.md", docsRouteContent)).toEqual([]);
   });
 
+  test("ignores scheme-like placeholders inside markdown links", () => {
+    const mdcLinkContent = [
+      "Please read [CONTRIBUTING.md](mdc:CONTRIBUTING.md) for details.",
+    ].join("\n");
+
+    expect(extractPathReferences("README.md", mdcLinkContent)).toEqual([]);
+  });
+
   test("classifies non-local path candidates without treating them as local files", () => {
     const noisyContent = [
       "Use `spatie/laravel-permission`.",
       "Expose the route under `/ai`.",
+      "A failed API request may hit `/api/v1/settings`.",
       "Use `Http/Controllers/{Module}/` as a placeholder.",
       "Run tests with --config configs/vitest.unit.json.",
       "Use src/example.ts as an example.",
@@ -198,7 +207,7 @@ describe("markdown extraction", () => {
         candidateKind: "glob-pattern",
         value: "Http/Controllers/{Module}/",
         file: "AGENTS.md",
-        line: 3,
+        line: 4,
         referenceType: "inline-code",
         sourceKind: "readme",
       },
@@ -206,7 +215,7 @@ describe("markdown extraction", () => {
         candidateKind: "command-argument",
         value: "configs/vitest.unit.json",
         file: "AGENTS.md",
-        line: 4,
+        line: 5,
         referenceType: "instruction-text",
         sourceKind: "readme",
       },
@@ -214,7 +223,7 @@ describe("markdown extraction", () => {
         candidateKind: "example-path",
         value: "src/example.ts",
         file: "AGENTS.md",
-        line: 5,
+        line: 6,
         referenceType: "instruction-text",
         sourceKind: "readme",
       },
@@ -222,7 +231,7 @@ describe("markdown extraction", () => {
         candidateKind: "local-file",
         value: "docs/testing.md",
         file: "AGENTS.md",
-        line: 6,
+        line: 7,
         referenceType: "inline-code",
         sourceKind: "readme",
       },
