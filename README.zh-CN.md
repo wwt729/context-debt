@@ -78,6 +78,7 @@ context-debt fix . --write
 2. 在 CI 中加上 `context-debt scan . --strict`
 3. 当你怀疑扫描范围或配置异常时，用 `context-debt doctor .` 排查
 4. 用 `context-debt fix .` 先预览高置信度修复，再决定是否写入
+5. 当你既要看发现诊断又要看当前问题依据时，用 `context-debt doctor . --verbose`
 
 ## 扫描对象
 
@@ -118,6 +119,7 @@ context-debt scan [path]
 - `--format <text|json>`：显式指定输出格式
 - `--strict`：将 `HIGH` 和高置信度 `MEDIUM` 视为失败
 - `--no-color`：关闭彩色输出
+- `--verbose`：在文本输出中显示 explanation 和额外问题元数据
 - `--config <path>`：指定自定义配置文件
 - `--max-issues <count>`：限制显示的问题数量，但保留完整汇总
 - `--include <glob>`：追加 include glob
@@ -128,6 +130,7 @@ context-debt scan [path]
 ```bash
 context-debt scan .
 context-debt scan . --strict
+context-debt scan . --verbose
 context-debt scan . --format json --max-issues 20
 context-debt scan . --config ./context-debt.config.json
 ```
@@ -149,6 +152,10 @@ context-debt doctor [path]
 - detected MCP files
 - discovered paths
 - discovered file counts by kind
+
+选项：
+
+- `--verbose`：附带输出当前规则命中结果、explanation 和 resolved path
 
 适合排查：
 
@@ -187,22 +194,26 @@ Context Debt Report
 HIGH (2)
   missing-test-script - Referenced test command has no matching script
     File: CLAUDE.md:3
+    Confidence: high (0.98)
     Evidence: pnpm test was referenced, but package.json has no "test" script.
     Recommendation: Add scripts.test to package.json or update the instruction to the correct test command.
   referenced-file-missing - Referenced local file does not exist
     File: AGENTS.md:7
+    Confidence: high (0.99)
     Evidence: docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.
     Recommendation: Create the referenced file or update the instruction to point at an existing path.
 
 MEDIUM (1)
   stale-reference - Referenced file path appears stale after a rename
     File: README.md:12
+    Confidence: high (0.90)
     Evidence: docs/legacy-ci.md was referenced, but docs/ci.md exists instead.
     Recommendation: Update the instruction to the current path so agents follow the right file.
 
 LOW (1)
   token-waste - Repeated long instruction blocks waste context budget
     File: AGENTS.md
+    Confidence: medium (0.82)
     Evidence: 91 duplicated words were repeated across AGENTS.md and CLAUDE.md.
     Recommendation: Keep one canonical instruction block and reference it from the other files.
 
@@ -215,6 +226,8 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 - `MEDIUM`：冲突、过期或过大的上下文
 - `LOW`：信息质量或 token 效率问题
 - `INFO`：信息性提示
+
+使用 `context-debt scan . --verbose` 可以在文本输出里额外看到规则 explanation，以及 resolved path、related files 等元数据。
 
 ## JSON 输出示例
 
@@ -463,6 +476,8 @@ pnpm smoke:package
 - 提供更多 autofixer，而不止是精确重复和缺失引用清理
 - 补充更丰富的规则文档与示例
 - 增加更多真实仓库回归 fixture，持续校准误报
+
+真实仓库 regression 覆盖现在会在 CI 中校验。每条已发布规则都必须被第三方 regression triage 覆盖；如果暂时还没有真实 fixture，就必须在 `regressions/manifest.json` 里显式登记 coverage gap 和原因。
 
 ## 发布说明
 

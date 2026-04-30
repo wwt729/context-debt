@@ -1,0 +1,288 @@
+name: Agentic Ready Transformer
+
+on:
+  # Manually triggered from the agent-ready Actions tab
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: 'Target repo to transform (e.g. myorg/my-app)'
+        required: true
+        type: string
+      target_branch:
+        description: 'Base branch to create PR against'
+        required: false
+        default: 'main'
+        type: string
+      only:
+        description: 'Limit generation (agents|tools|context|memory), empty = all'
+        required: false
+        default: ''
+        type: string
+      force:
+        description: 'Overwrite existing files'
+        required: false
+        default: false
+        type: boolean
+      provider:
+        description: 'LLM provider preset: anthropic | openai | google | groq | mistral | together | ollama'
+        required: false
+        default: 'anthropic'
+        type: string
+      eval:
+        description: 'Run evaluation after transformation and save AGENTIC_EVAL.md'
+        required: false
+        default: false
+        type: boolean
+      fail_level:
+        description: 'Fail if eval pass rate is below this threshold (0.0-1.0). Use as CI gate.'
+        required: false
+        default: '0.0'
+        type: string
+      issue_number:
+        description: 'Issue number in the target repo to close after PR is opened'
+        required: false
+        default: ''
+        type: string
+
+  # Also callable from other workflows within agent-ready itself
+  workflow_call:
+    inputs:
+      target_repo:
+        description: 'Target repo to transform (e.g. myorg/my-app)'
+        required: true
+        type: string
+      target_branch:
+        description: 'Base branch to create PR against'
+        required: false
+        default: 'main'
+        type: string
+      only:
+        description: 'Limit generation (agents|tools|context|memory), empty = all'
+        required: false
+        default: ''
+        type: string
+      force:
+        description: 'Overwrite existing files'
+        required: false
+        default: false
+        type: boolean
+      provider:
+        description: 'LLM provider preset: anthropic | openai | google | groq | mistral | together | ollama'
+        required: false
+        default: 'anthropic'
+        type: string
+      eval:
+        description: 'Run evaluation after transformation and save AGENTIC_EVAL.md'
+        required: false
+        default: false
+        type: boolean
+      fail_level:
+        description: 'Fail if eval pass rate is below this threshold (0.0-1.0). Use as CI gate.'
+        required: false
+        default: '0.0'
+        type: string
+      issue_number:
+        description: 'Issue number in the target repo to close after PR is opened'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  transform:
+    # Runs in agent-ready. For workflow_call, secrets come from the caller repo
+    # via `secrets: inherit` (typically the target repo trigger workflow).
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # All inputs are passed through env vars — never interpolated directly
+      # into run: shell blocks — to prevent expression injection.
+      - name: Validate inputs
+        env:
+          TARGET_REPO: ${{ inputs.target_repo }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+          PROVIDER: ${{ inputs.provider }}
+          INPUT_EVAL: ${{ inputs.eval }}
+          INPUT_FAIL_LEVEL: ${{ inputs.fail_level }}
+          INPUT_ONLY: ${{ inputs.only }}
+          INPUT_FORCE: ${{ inputs.force }}
+        run: |
+          if [[ ! "$TARGET_REPO" =~ ^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$ ]]; then
+            echo "❌ Invalid repo format. Use: owner/repo"
+            exit 1
+          fi
+          if [[ -n "$PROVIDER" ]] && [[ ! "$PROVIDER" =~ ^(anthropic|openai|google|groq|mistral|together|ollama)$ ]]; then
+            echo "❌ Unknown provider '$PROVIDER'. Allowed: anthropic openai google groq mistral together ollama"
+            exit 1
+          fi
+          echo "✅ Target:   $TARGET_REPO@$TARGET_BRANCH"
+          echo "   Provider: $PROVIDER"
+          echo "   Eval:     $INPUT_EVAL"
+          echo "   Fail level: $INPUT_FAIL_LEVEL"
+          echo "   Only:     ${INPUT_ONLY:-all}"
+          echo "   Force:    $INPUT_FORCE"
+      - name: Checkout agent-ready (this repo — contains the transformer)
+        uses: actions/checkout@v6
+        with:
+          repository: vb-nattamai/agent-ready
+          token: ${{ secrets.INSTALL_TOKEN != '' && secrets.INSTALL_TOKEN || github.token }}
+          path: agent-ready
+
+      - name: Checkout target repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ inputs.target_repo }}
+          token: ${{ secrets.INSTALL_TOKEN != '' && secrets.INSTALL_TOKEN || github.token }}
+          path: target-repo
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install agent-ready with AI dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e './agent-ready[ai]' -q
+
+      - name: Configure git for target repo
+        run: |
+          cd target-repo
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Run transformer against target repo
+        id: transform
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}/agent-ready/src
+          INPUT_ONLY: ${{ inputs.only }}
+          INPUT_FORCE: ${{ inputs.force }}
+          INPUT_PROVIDER: ${{ inputs.provider }}
+          INPUT_EVAL: ${{ inputs.eval }}
+          INPUT_FAIL_LEVEL: ${{ inputs.fail_level }}
+        run: |
+          CMD=(python "$GITHUB_WORKSPACE/agent-ready/src/agent_ready/cli.py" --target ./target-repo)
+          [ -n "$INPUT_ONLY" ]             && CMD+=(--only      "$INPUT_ONLY")
+          [ "$INPUT_FORCE" = "true" ]      && CMD+=(--force)
+          [ -n "$INPUT_PROVIDER" ]         && CMD+=(--provider  "$INPUT_PROVIDER")
+          [ "$INPUT_EVAL" = "true" ]       && CMD+=(--eval)
+          [ "$INPUT_FAIL_LEVEL" != "0.0" ] && CMD+=(--fail-level "$INPUT_FAIL_LEVEL")
+
+          echo "Running: ${CMD[*]}"
+          echo ""
+          "${CMD[@]}"
+
+          cd target-repo
+          if git diff --quiet && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo "generated=false" >> $GITHUB_OUTPUT
+          else
+            echo "generated=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create branch and commit in target repo
+        if: steps.transform.outputs.generated == 'true'
+        env:
+          INSTALL_TOKEN: ${{ secrets.INSTALL_TOKEN }}
+          INPUT_TARGET_REPO: ${{ inputs.target_repo }}
+        run: |
+          cd target-repo
+
+          BRANCH_NAME="agentic-ready/init"
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            BRANCH_NAME="agentic-ready/update-$(date +%Y%m%d-%H%M%S)"
+          fi
+
+          git checkout -b "$BRANCH_NAME"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No staged changes — skipping commit."
+          else
+            git commit -m "feat: add agentic-ready scaffolding [skip ci]"
+            git push "https://x-access-token:${INSTALL_TOKEN}@github.com/${INPUT_TARGET_REPO}.git" "$BRANCH_NAME"
+          fi
+
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Create Pull Request in target repo
+        if: steps.transform.outputs.generated == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.INSTALL_TOKEN != '' && secrets.INSTALL_TOKEN || github.token }}
+          INPUT_TARGET_REPO: ${{ inputs.target_repo }}
+          INPUT_TARGET_BRANCH: ${{ inputs.target_branch }}
+        run: |
+          BRANCH_NAME="${BRANCH_NAME}"
+          TARGET_REPO="$INPUT_TARGET_REPO"
+          TARGET_BRANCH="$INPUT_TARGET_BRANCH"
+
+          gh label create agentic-ready \
+            --repo "$TARGET_REPO" \
+            --color "4CAF50" \
+            --description "Agentic ready scaffolding" 2>/dev/null || true
+
+          if git -C target-repo ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "Branch $BRANCH_NAME found on origin — creating PR."
+
+            if [ -f agent-ready/.github/PR_TEMPLATE.md ]; then
+              PR_URL=$(gh pr create \
+                --repo "$TARGET_REPO" \
+                --title "🤖 Add agentic-ready scaffolding" \
+                --body-file agent-ready/.github/PR_TEMPLATE.md \
+                --base "$TARGET_BRANCH" \
+                --head "$BRANCH_NAME" \
+                --label agentic-ready)
+            else
+              PR_URL=$(gh pr create \
+                --repo "$TARGET_REPO" \
+                --title "🤖 Add agentic-ready scaffolding" \
+                --body "Generated by [AgentReady](https://github.com/vb-nattamai/agent-ready)" \
+                --base "$TARGET_BRANCH" \
+                --head "$BRANCH_NAME" \
+                --label agentic-ready)
+            fi
+
+            echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+            echo "Pull Request created: $PR_URL"
+          else
+            echo "Branch was not pushed — skipping PR creation."
+            echo "pr_url=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post success summary
+        if: steps.pr.outputs.pr_url != ''
+        env:
+          INPUT_TARGET_REPO: ${{ inputs.target_repo }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+        run: |
+          echo "✅ Transformation complete!"
+          echo "   Target: $INPUT_TARGET_REPO"
+          echo "   PR:     $PR_URL"
+
+      - name: Close triggering issue in target repo
+        if: inputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.INSTALL_TOKEN != '' && secrets.INSTALL_TOKEN || github.token }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+          ISSUE: ${{ inputs.issue_number }}
+          TARGET_REPO: ${{ inputs.target_repo }}
+        run: |
+          if [ -n "$PR_URL" ]; then
+            gh issue comment "$ISSUE" \
+              --repo "$TARGET_REPO" \
+              --body "✅ Transformation complete! PR opened: $PR_URL"$'\n'"Review and merge to add the agentic scaffolding to this repository."
+          else
+            gh issue comment "$ISSUE" \
+              --repo "$TARGET_REPO" \
+              --body "ℹ️ Installer run completed — repository already up to date or no changes were produced. No PR was created."
+          fi
+
+          gh issue close "$ISSUE" --repo "$TARGET_REPO" --reason completed

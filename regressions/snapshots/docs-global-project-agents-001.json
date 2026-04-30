@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "docs-global-project-agents-001",
+  "summary": {
+    "HIGH": 2,
+    "MEDIUM": 1,
+    "LOW": 1,
+    "INFO": 0
+  },
+  "strictFailureCount": 1,
+  "issues": [
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "README.md",
+      "line": 29,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": ".github/copilot-instructions.md",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "README.md",
+      "line": 106,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "docs/INDEX.md",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "stale-reference",
+      "severity": "MEDIUM",
+      "file": "README.md",
+      "line": 29,
+      "title": "Stale reference points to a deprecated or removed path",
+      "confidenceLabel": "high",
+      "resolvedPath": ".github/copilot-instructions.md",
+      "relatedFiles": ["github-copilot/copilot-instructions.md"],
+      "serverName": null
+    },
+    {
+      "ruleId": "missing-ai-context",
+      "severity": "LOW",
+      "file": ".",
+      "line": null,
+      "title": "No primary AI instruction files found",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    }
+  ]
+}

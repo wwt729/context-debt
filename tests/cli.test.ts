@@ -29,6 +29,7 @@ describe("runCli", () => {
         "HIGH (1)",
         "  missing-test-script - Referenced test command has no matching script",
         "    File: CLAUDE.md:3",
+        "    Confidence: high (0.98)",
         '    Evidence: pnpm test was referenced, but package.json has no "test" script.',
         "    Recommendation: Add scripts.test to package.json or update the instruction to the correct test command.",
         "",
@@ -113,6 +114,23 @@ describe("runCli", () => {
     expect(JSON.parse(result.stdout).issues).toHaveLength(1);
   });
 
+  test("prints explanations in verbose text output", async () => {
+    const result = await runCliWithOutput([
+      "scan",
+      fixturePath("missing-reference"),
+      "--no-color",
+      "--verbose",
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout).toContain("Confidence: medium (0.78)");
+    expect(result.stdout).toContain(
+      "Explanation: AI instructions refer to a local file or path that is not present in the repository.",
+    );
+    expect(result.stdout).toContain("Resolved path: docs/testing.md");
+  });
+
   test("doctor reports discovery diagnostics", async () => {
     const result = await runCliWithOutput([
       "doctor",
@@ -125,6 +143,23 @@ describe("runCli", () => {
     expect(result.stdout).toContain("docs/**/*.md");
     expect(result.stdout).toContain("missing-lint-script (level=off)");
     expect(result.stdout).toContain("docs/custom.md");
+  });
+
+  test("doctor --verbose includes current findings with explanations", async () => {
+    const result = await runCliWithOutput([
+      "doctor",
+      fixturePath("missing-reference"),
+      "--verbose",
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("Current findings:");
+    expect(result.stdout).toContain(
+      "referenced-file-missing - Referenced local file does not exist",
+    );
+    expect(result.stdout).toContain(
+      "Explanation: AI instructions refer to a local file or path that is not present in the repository.",
+    );
   });
 
   test("accepts repeated include and exclude flags", async () => {

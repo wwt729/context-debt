@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-cli-continues-001",
+  "summary": {
+    "HIGH": 3,
+    "MEDIUM": 4,
+    "LOW": 0,
+    "INFO": 0
+  },
+  "strictFailureCount": 0,
+  "issues": [
+    {
+      "ruleId": "conflicting-package-manager",
+      "severity": "HIGH",
+      "file": ".",
+      "line": null,
+      "title": "Conflicting package manager guidance detected",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "README.md"
+      ],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "AGENTS.md",
+      "line": 29,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "src/parsers/<tool>.ts",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "CLAUDE.md",
+      "line": 73,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "src/parsers/newtool.ts",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "contradictory-test-command",
+      "severity": "MEDIUM",
+      "file": ".",
+      "line": null,
+      "title": "Different files recommend incompatible test commands",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": ["AGENTS.md", "CLAUDE.md", "README.md"],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "MEDIUM",
+      "file": "README.md",
+      "line": 207,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "medium",
+      "resolvedPath": "src/api/routes.ts",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "MEDIUM",
+      "file": "README.md",
+      "line": 207,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "medium",
+      "resolvedPath": "src/auth.ts",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "MEDIUM",
+      "file": "README.md",
+      "line": 207,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "medium",
+      "resolvedPath": "tests/auth.test.ts",
+      "relatedFiles": [],
+      "serverName": null
+    }
+  ]
+}

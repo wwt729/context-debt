@@ -117,7 +117,7 @@ function copySeedFiles(sourceRoot, fixtureRoot) {
 async function hydrateReferencedFiles(sourceRoot, fixtureRoot) {
   for (let round = 0; round < 5; round += 1) {
     const result = await scanRepository(fixtureRoot);
-    const candidates = collectHydrationCandidates(result.issues);
+    const candidates = collectHydrationCandidates(sourceRoot, result.issues);
     let copied = 0;
 
     for (const candidate of candidates) {
@@ -137,12 +137,20 @@ async function hydrateReferencedFiles(sourceRoot, fixtureRoot) {
   }
 }
 
-function collectHydrationCandidates(issues) {
+function collectHydrationCandidates(sourceRoot, issues) {
   const candidates = new Set();
 
   for (const issue of issues) {
     if (issue.ruleId === "referenced-file-missing" && issue.resolvedPath) {
       candidates.add(issue.resolvedPath);
+      const basenameMatch = findUniqueBasenameMatch(
+        sourceRoot,
+        issue.resolvedPath,
+      );
+
+      if (basenameMatch) {
+        candidates.add(basenameMatch);
+      }
     }
 
     if (issue.ruleId === "stale-reference") {
@@ -153,6 +161,22 @@ function collectHydrationCandidates(issues) {
   }
 
   return [...candidates].sort((left, right) => left.localeCompare(right));
+}
+
+function findUniqueBasenameMatch(sourceRoot, relativePath) {
+  const baseName = basename(relativePath);
+  const matches = fg.sync([`**/${baseName}`], {
+    cwd: sourceRoot,
+    dot: true,
+    onlyFiles: true,
+    unique: true,
+  });
+
+  if (matches.length !== 1) {
+    return null;
+  }
+
+  return matches[0];
 }
 
 function copyRelativePath(sourceRoot, fixtureRoot, relativePath) {
@@ -189,6 +213,7 @@ function updateManifest(options, metadata, commit) {
     .sort((left, right) => left.id.localeCompare(right.id));
   const nextManifest = {
     schemaVersion: 1,
+    coverageGaps: manifest.coverageGaps,
     repos: nextRepos,
   };
 

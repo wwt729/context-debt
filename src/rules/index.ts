@@ -15,7 +15,7 @@ import { staleReferenceRule } from "./stale-reference.js";
 import { tokenWasteRule } from "./token-waste.js";
 import { tooManyGlobalRulesRule } from "./too-many-global-rules.js";
 
-const rules: RuleModule[] = [
+export const rules: RuleModule[] = [
   missingAiContextRule,
   missingTestScriptRule,
   missingBuildScriptRule,
@@ -31,6 +31,10 @@ const rules: RuleModule[] = [
   repeatedNegativeRulesRule,
   tooManyGlobalRulesRule,
 ];
+
+export const ruleIds = rules
+  .map((rule) => rule.id)
+  .sort((left, right) => left.localeCompare(right));
 
 export function runRules(context: ScanContext): Issue[] {
   return rules.flatMap((rule) => runRuleWithSettings(context, rule));

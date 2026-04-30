@@ -3,6 +3,7 @@ import pc from "picocolors";
 import { TOOL_NAME, VERSION } from "./meta.js";
 import { JSON_SCHEMA_VERSION } from "./schema.js";
 import type {
+  DoctorReportOptions,
   DoctorResult,
   FixResult,
   Issue,
@@ -27,7 +28,7 @@ export function formatTextReport(
 
     lines.push(`${formatSeverity(severity, options.color)} (${issues.length})`);
     for (const issue of issues) {
-      lines.push(...formatIssue(issue));
+      lines.push(...formatIssue(issue, options));
     }
     lines.push("");
   }
@@ -103,11 +104,12 @@ function formatSeverity(severity: Severity, color: boolean): string {
   return pc.gray(severity);
 }
 
-function formatIssue(issue: Issue): string[] {
+function formatIssue(issue: Issue, options: ReportOptions): string[] {
   const location = issue.line ? `${issue.file}:${issue.line}` : issue.file;
   const lines = [
     `  ${issue.id} - ${issue.title}`,
     `    File: ${location}`,
+    `    Confidence: ${issue.confidenceLabel ?? "unknown"} (${issue.confidence.toFixed(2)})`,
     `    Evidence: ${issue.evidence}`,
     `    Recommendation: ${issue.recommendation}`,
   ];
@@ -116,10 +118,33 @@ function formatIssue(issue: Issue): string[] {
     lines.splice(2, 0, `    Server: ${issue.serverName}`);
   }
 
+  if (options.verbose) {
+    lines.splice(lines.length - 1, 0, `    Explanation: ${issue.explanation}`);
+
+    if (issue.resolvedPath) {
+      lines.splice(
+        lines.length - 1,
+        0,
+        `    Resolved path: ${issue.resolvedPath}`,
+      );
+    }
+
+    if (issue.relatedFiles?.length) {
+      lines.splice(
+        lines.length - 1,
+        0,
+        `    Related files: ${issue.relatedFiles.join(", ")}`,
+      );
+    }
+  }
+
   return lines;
 }
 
-export function formatDoctorReport(result: DoctorResult): string {
+export function formatDoctorReport(
+  result: DoctorResult,
+  options: DoctorReportOptions = {},
+): string {
   const ruleOverrides =
     result.ruleOverrides.length > 0
       ? result.ruleOverrides
@@ -150,6 +175,18 @@ export function formatDoctorReport(result: DoctorResult): string {
         .join(", ") || "none"
     }`,
   ];
+
+  if (options.findingPreview) {
+    lines.push("");
+    lines.push("Current findings:");
+    lines.push(
+      `Summary: ${options.findingPreview.summary.HIGH} HIGH, ${options.findingPreview.summary.MEDIUM} MEDIUM, ${options.findingPreview.summary.LOW} LOW, ${options.findingPreview.summary.INFO} INFO`,
+    );
+
+    for (const issue of options.findingPreview.issues) {
+      lines.push(...formatIssue(issue, { color: false, verbose: true }));
+    }
+  }
 
   return `${lines.join("\n")}\n`;
 }

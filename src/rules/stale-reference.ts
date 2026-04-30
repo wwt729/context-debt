@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { basename, extname } from "node:path";
+import fg from "fast-glob";
 
 import type { Issue, RuleModule, ScanContext } from "../core/types.js";
 import {
@@ -14,7 +15,6 @@ export const staleReferenceRule: RuleModule = {
   check(context: ScanContext): Issue[] {
     return context.pathReferences
       .filter((reference) => reference.candidateKind === "local-file")
-      .filter((reference) => isDeprecatedPath(reference.value))
       .map((reference) => buildIssue(context, reference))
       .filter((issue): issue is Issue => issue !== null);
   },
@@ -42,6 +42,10 @@ function buildIssue(
     return null;
   }
 
+  if (!isLikelyStaleReference(reference, relativePath, replacementCandidates)) {
+    return null;
+  }
+
   return {
     id: "stale-reference",
     ruleId: "stale-reference",
@@ -60,15 +64,47 @@ function buildIssue(
   };
 }
 
+function isLikelyStaleReference(
+  reference: ScanContext["pathReferences"][number],
+  relativePath: string,
+  replacementCandidates: string[],
+): boolean {
+  if (isDeprecatedPath(reference.value) || isDeprecatedPath(relativePath)) {
+    return true;
+  }
+
+  if (reference.referenceType === "instruction-text") {
+    return false;
+  }
+
+  if (replacementCandidates.length !== 1) {
+    return false;
+  }
+  return true;
+}
+
 function findReplacementCandidates(
   context: ScanContext,
   relativePath: string,
 ): string[] {
   const targetBaseName = basename(relativePath);
   const targetStem = stripExtension(targetBaseName);
-  const candidates = [...context.discoveredPaths]
+  const discoveredCandidates = [...context.discoveredPaths].filter((path) =>
+    hasSameBaseName(path, targetBaseName, targetStem),
+  );
+  const repoCandidates = fg
+    .sync([`**/${targetBaseName}`], {
+      cwd: context.rootDir,
+      dot: true,
+      ignore: context.config.scan.exclude.map((entry) =>
+        entry.endsWith("/**") ? entry : `${entry}/**`,
+      ),
+      onlyFiles: true,
+      unique: true,
+    })
+    .filter((path) => hasSameBaseName(path, targetBaseName, targetStem));
+  const candidates = [...new Set([...discoveredCandidates, ...repoCandidates])]
     .filter((path) => path !== relativePath)
-    .filter((path) => hasSameBaseName(path, targetBaseName, targetStem))
     .sort((left, right) => left.localeCompare(right));
 
   return candidates.slice(0, 3);

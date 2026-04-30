@@ -33,6 +33,11 @@ const triageSchema = z.object({
   mustNotAppear: z.array(issueMatchSchema).default([]),
 });
 
+const coverageGapSchema = z.object({
+  ruleId: z.string().min(1),
+  reason: z.string().min(1),
+});
+
 const regressionRepoSchema = z.object({
   id: z.string().min(1),
   category: regressionCategorySchema,
@@ -54,6 +59,7 @@ const regressionRepoSchema = z.object({
 
 const regressionManifestSchema = z.object({
   schemaVersion: z.literal(1),
+  coverageGaps: z.array(coverageGapSchema).default([]),
   repos: z.array(regressionRepoSchema).default([]),
 });
 
@@ -62,6 +68,8 @@ export type RegressionIssueMatch = z.infer<typeof issueMatchSchema>;
 export type RegressionTriage = z.infer<typeof triageSchema>;
 export type RegressionRepo = z.infer<typeof regressionRepoSchema>;
 export type RegressionManifest = z.infer<typeof regressionManifestSchema>;
+export type RegressionCoverageGap = z.infer<typeof coverageGapSchema>;
+export type RegressionTriageBucket = keyof RegressionTriage;
 
 export type NormalizedRegressionIssue = {
   confidenceLabel: ConfidenceLabel | null;
@@ -142,6 +150,50 @@ export function findForbiddenRegressionIssues(
 ): NormalizedRegressionIssue[] {
   return issues.filter((issue) =>
     repo.triage.mustNotAppear.some((match) => matchesIssue(issue, match)),
+  );
+}
+
+export function collectRegressionRuleCoverage(
+  manifest: RegressionManifest,
+): Map<string, Set<RegressionTriageBucket>> {
+  const coverage = new Map<string, Set<RegressionTriageBucket>>();
+
+  for (const repo of manifest.repos) {
+    collectCoverageForBucket(coverage, repo, "expectedTruePositives");
+    collectCoverageForBucket(coverage, repo, "allowedFalsePositives");
+    collectCoverageForBucket(coverage, repo, "mustNotAppear");
+  }
+
+  return coverage;
+}
+
+export function findRegressionCoverageGaps(
+  manifest: RegressionManifest,
+  supportedRuleIds: string[],
+): string[] {
+  const coveredRuleIds = new Set(
+    collectRegressionRuleCoverage(manifest).keys(),
+  );
+  const acknowledgedGapIds = new Set(
+    manifest.coverageGaps.map((entry) => entry.ruleId),
+  );
+
+  return supportedRuleIds.filter(
+    (ruleId) => !coveredRuleIds.has(ruleId) && !acknowledgedGapIds.has(ruleId),
+  );
+}
+
+export function findRedundantCoverageGapEntries(
+  manifest: RegressionManifest,
+  supportedRuleIds: string[],
+): RegressionCoverageGap[] {
+  const coveredRuleIds = new Set(
+    collectRegressionRuleCoverage(manifest).keys(),
+  );
+  const supported = new Set(supportedRuleIds);
+
+  return manifest.coverageGaps.filter(
+    (entry) => !supported.has(entry.ruleId) || coveredRuleIds.has(entry.ruleId),
   );
 }
 
@@ -245,4 +297,16 @@ function compareOptional<T>(
   }
 
   return actual === expected;
+}
+
+function collectCoverageForBucket(
+  coverage: Map<string, Set<RegressionTriageBucket>>,
+  repo: RegressionRepo,
+  bucket: RegressionTriageBucket,
+): void {
+  for (const entry of repo.triage[bucket]) {
+    const existing = coverage.get(entry.ruleId) ?? new Set();
+    existing.add(bucket);
+    coverage.set(entry.ruleId, existing);
+  }
 }

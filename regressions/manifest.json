@@ -1,6 +1,54 @@
 {
   "schemaVersion": 1,
+  "coverageGaps": [],
   "repos": [
+    {
+      "id": "ai-agent-ready-001",
+      "category": "ai-heavy",
+      "source": {
+        "repo": "vb-nattamai/agent-ready",
+        "commit": "e84ab55bca91c488abf10752bea15c7db873a34f",
+        "license": "MIT",
+        "url": "https://github.com/vb-nattamai/agent-ready"
+      },
+      "fixturePath": "regressions/repos/ai-agent-ready-001",
+      "snapshotPath": "regressions/snapshots/ai-agent-ready-001.json",
+      "notes": "Python-first repository with large AGENTS and CLAUDE files plus generated scaffold references.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 121,
+            "resolvedPath": ".github/copilot-instructions.md",
+            "reason": "The generated scaffold inventory mentions a root Copilot instructions file that is absent in the pinned commit."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "CLAUDE.md",
+            "severity": "HIGH",
+            "line": 86,
+            "resolvedPath": ".github/copilot-instructions.md",
+            "reason": "The CLAUDE file repeats the missing root Copilot instructions reference from the generated scaffold set."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": "AGENTS.md",
+            "severity": "MEDIUM",
+            "reason": "The primary AGENTS contract exceeds the default context-size threshold."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": "README.md",
+            "severity": "MEDIUM",
+            "reason": "The README is large enough to exceed the default prompt-size threshold."
+          }
+        ],
+        "allowedFalsePositives": [],
+        "mustNotAppear": []
+      }
+    },
     {
       "id": "ai-agentsmd-001",
       "category": "ai-heavy",
@@ -39,6 +87,77 @@
             "reason": "Optional recap commands marked if present should not fail the missing script rule."
           }
         ]
+      }
+    },
+    {
+      "id": "ai-cli-continues-001",
+      "category": "ai-heavy",
+      "source": {
+        "repo": "yigitkonur/cli-continues",
+        "commit": "52a29d6851b92e3cc15cabc0514272b168c2153c",
+        "license": "MIT",
+        "url": "https://github.com/yigitkonur/cli-continues"
+      },
+      "fixturePath": "regressions/repos/ai-cli-continues-001",
+      "snapshotPath": "regressions/snapshots/ai-cli-continues-001.json",
+      "notes": "TypeScript CLI with both AGENTS and CLAUDE guidance plus README examples that mix npm and pnpm instructions.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "conflicting-package-manager",
+            "file": ".",
+            "severity": "HIGH",
+            "reason": "The repo ships both package-lock and pnpm-lock while AGENTS, CLAUDE, and README mix npm and pnpm guidance."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 29,
+            "resolvedPath": "src/parsers/<tool>.ts",
+            "reason": "The AGENTS checklist uses a placeholder parser path that does not exist in the pinned commit."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "CLAUDE.md",
+            "severity": "HIGH",
+            "line": 73,
+            "resolvedPath": "src/parsers/newtool.ts",
+            "reason": "The CLAUDE guide includes a hypothetical parser file path for new platform support that is absent in the repository."
+          },
+          {
+            "ruleId": "contradictory-test-command",
+            "file": ".",
+            "severity": "MEDIUM",
+            "reason": "AGENTS, CLAUDE, and README mix the primary `test` script with `test:watch`, producing incompatible test guidance."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "README.md",
+            "severity": "MEDIUM",
+            "line": 207,
+            "resolvedPath": "src/api/routes.ts",
+            "reason": "The README architecture example names a route file that does not exist in the pinned commit."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "README.md",
+            "severity": "MEDIUM",
+            "line": 207,
+            "resolvedPath": "src/auth.ts",
+            "reason": "The README architecture example names an auth module path that is absent in the repository."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "README.md",
+            "severity": "MEDIUM",
+            "line": 207,
+            "resolvedPath": "tests/auth.test.ts",
+            "reason": "The README architecture example includes a test file path that is not present in the pinned commit."
+          }
+        ],
+        "allowedFalsePositives": [],
+        "mustNotAppear": []
       }
     },
     {
@@ -280,6 +399,56 @@
       }
     },
     {
+      "id": "docs-global-project-agents-001",
+      "category": "docs-heavy",
+      "source": {
+        "repo": "shariqriazz/global-project-agents-md",
+        "commit": "c53db641e534c3a2c2347ebda54043e54af0229b",
+        "license": "UNKNOWN",
+        "url": "https://github.com/shariqriazz/global-project-agents-md"
+      },
+      "fixturePath": "regressions/repos/docs-global-project-agents-001",
+      "snapshotPath": "regressions/snapshots/docs-global-project-agents-001.json",
+      "notes": "README-centric instructions repo with a stale Copilot instructions path and no primary AGENTS or CLAUDE file at the root.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "README.md",
+            "severity": "HIGH",
+            "line": 29,
+            "resolvedPath": ".github/copilot-instructions.md",
+            "reason": "The README points to a root Copilot instructions file that no longer exists at that location."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "README.md",
+            "severity": "HIGH",
+            "line": 106,
+            "resolvedPath": "docs/INDEX.md",
+            "reason": "The README links to a docs index path that is absent in the pinned commit."
+          },
+          {
+            "ruleId": "stale-reference",
+            "file": "README.md",
+            "severity": "MEDIUM",
+            "line": 29,
+            "resolvedPath": ".github/copilot-instructions.md",
+            "reason": "The old root Copilot instructions path has a clear replacement at `github-copilot/copilot-instructions.md`."
+          }
+        ],
+        "allowedFalsePositives": [
+          {
+            "ruleId": "missing-ai-context",
+            "file": ".",
+            "severity": "LOW",
+            "reason": "This repository is a documentation pack for instruction files rather than a project codebase with a primary AGENTS root file."
+          }
+        ],
+        "mustNotAppear": []
+      }
+    },
+    {
       "id": "docs-openhands-001",
       "category": "docs-heavy",
       "source": {
@@ -445,6 +614,53 @@
             "reason": "Bare filenames in nested instruction files should resolve to an existing repo-root file when appropriate."
           }
         ]
+      }
+    },
+    {
+      "id": "monorepo-rulesmith-001",
+      "category": "monorepo",
+      "source": {
+        "repo": "CsabaKovacs/rulesmith",
+        "commit": "971db3cd70babd72dc62e2da683acc60e2edaacf",
+        "license": "Apache-2.0",
+        "url": "https://github.com/CsabaKovacs/rulesmith"
+      },
+      "fixturePath": "regressions/repos/monorepo-rulesmith-001",
+      "snapshotPath": "regressions/snapshots/monorepo-rulesmith-001.json",
+      "notes": "Pnpm monorepo with mirrored AGENTS and CLAUDE guidance plus package-scoped source paths.",
+      "triage": {
+        "expectedTruePositives": [
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "AGENTS.md",
+            "severity": "HIGH",
+            "line": 41,
+            "resolvedPath": "src/index.ts",
+            "reason": "The AGENTS file still points to a root-level source entry point that is absent in the pinned monorepo layout."
+          },
+          {
+            "ruleId": "referenced-file-missing",
+            "file": "CLAUDE.md",
+            "severity": "HIGH",
+            "line": 44,
+            "resolvedPath": "src/index.ts",
+            "reason": "The CLAUDE guide repeats the stale root entry-point path from before the monorepo package split."
+          },
+          {
+            "ruleId": "oversized-context-file",
+            "file": "README.md",
+            "severity": "MEDIUM",
+            "reason": "The repository README exceeds the default prompt-size threshold."
+          },
+          {
+            "ruleId": "token-waste",
+            "file": "AGENTS.md",
+            "severity": "LOW",
+            "reason": "The monorepo duplicates a large amount of guidance across AGENTS, CLAUDE, and Copilot instructions."
+          }
+        ],
+        "allowedFalsePositives": [],
+        "mustNotAppear": []
       }
     }
   ]

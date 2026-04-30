@@ -1,0 +1,172 @@
+name: Install AgentReady to Target Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: 'Target repo (e.g., myorg/my-app)'
+        required: true
+        type: string
+      target_branch:
+        description: 'Branch to commit to'
+        required: false
+        default: 'main'
+        type: string
+      provider:
+        description: 'LLM provider: anthropic | openai | google | groq | mistral | together | ollama'
+        required: false
+        default: 'anthropic'
+        type: string
+      eval:
+        description: 'Enable eval mode in the installed trigger workflow'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Validate inputs
+        env:
+          TARGET_REPO: ${{ inputs.target_repo }}
+          PROVIDER: ${{ inputs.provider }}
+          EVAL_MODE: ${{ inputs.eval }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+          INSTALL_TOKEN_SET: ${{ secrets.INSTALL_TOKEN != '' && 'true' || 'false' }}
+        run: |
+          if [[ ! "$TARGET_REPO" =~ ^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$ ]]; then
+            echo "❌ Invalid repo format. Use: owner/repo"
+            exit 1
+          fi
+          if [ "$INSTALL_TOKEN_SET" != "true" ]; then
+            echo "⚠️  INSTALL_TOKEN not set — falling back to github.token"
+            echo "   This will fail for repos outside this org."
+          fi
+          echo "✅ Installing to: $TARGET_REPO@$TARGET_BRANCH"
+          echo "   Provider:  $PROVIDER"
+          echo "   Eval mode: $EVAL_MODE"
+
+      - name: Checkout toolkit (for workflow templates)
+        uses: actions/checkout@v6
+        with:
+          path: toolkit
+
+      - name: Push trigger workflows into target repo
+        env:
+          GH_TOKEN: ${{ secrets.INSTALL_TOKEN != '' && secrets.INSTALL_TOKEN || github.token }}
+          TARGET_REPO: ${{ inputs.target_repo }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+          PROVIDER: ${{ inputs.provider }}
+          EVAL_MODE: ${{ inputs.eval }}
+        run: |
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPO}.git" target-repo
+          cd target-repo
+
+          mkdir -p .github/workflows .github/ISSUE_TEMPLATE
+
+          TEMPLATE="../toolkit/src/agent_ready/templates/install-workflow.yml"
+
+          # Patch provider and eval flags before copying
+          if [ "$EVAL_MODE" = "true" ]; then
+            sed -e "s/provider: anthropic/provider: ${PROVIDER}/" \
+                -e 's/eval: false/eval: true/' \
+                "$TEMPLATE" > .github/workflows/agentic-ready.yml
+            echo "✅ Provider '${PROVIDER}' and eval mode enabled in trigger workflow"
+          else
+            sed "s/provider: anthropic/provider: ${PROVIDER}/" \
+                "$TEMPLATE" > .github/workflows/agentic-ready.yml
+            echo "✅ Provider '${PROVIDER}' set in trigger workflow"
+          fi
+
+          # Weekly context drift detector
+          cp ../toolkit/src/agent_ready/templates/context-drift-detector-workflow.yml \
+             .github/workflows/context-drift-detector.yml
+
+          # AI-powered PR review
+          cp ../toolkit/src/agent_ready/templates/pr-review-workflow.yml \
+             .github/workflows/pr-review.yml
+
+          # Eval-only workflow (manual + push-triggered)
+          cp ../toolkit/src/agent_ready/templates/eval-workflow.yml \
+             .github/workflows/agentic-ready-eval.yml
+
+          # Issue form template
+          cp ../toolkit/src/agent_ready/templates/issue-template-agentic-ready.yml \
+             .github/ISSUE_TEMPLATE/agentic-ready.yml
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          if git diff --quiet && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo "ℹ️  Workflows already up to date — nothing to commit"
+          else
+            git add .github/workflows/agentic-ready.yml \
+                    .github/workflows/context-drift-detector.yml \
+                    .github/workflows/pr-review.yml \
+                    .github/workflows/agentic-ready-eval.yml \
+                    .github/ISSUE_TEMPLATE/agentic-ready.yml
+            if git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | grep -q "${TARGET_BRANCH}"; then
+              git commit -m "feat: install AgentReady - trigger, drift detector, PR review, eval, and issue template"
+              git push origin "HEAD:${TARGET_BRANCH}"
+              echo "✅ Files committed to ${TARGET_REPO}@${TARGET_BRANCH}"
+            else
+              echo "❌ Branch ${TARGET_BRANCH} not found in ${TARGET_REPO}"
+              exit 1
+            fi
+          fi
+
+      - name: Create or reuse AgentReady issue to trigger transformation
+        env:
+          GH_TOKEN: ${{ secrets.INSTALL_TOKEN != '' && secrets.INSTALL_TOKEN || github.token }}
+          TARGET_REPO: ${{ inputs.target_repo }}
+        run: |
+          gh label create agentic-ready \
+            --repo "$TARGET_REPO" \
+            --color "4CAF50" \
+            --description "Agentic ready scaffolding" 2>/dev/null || true
+
+          EXISTING=$(gh issue list \
+            --repo "$TARGET_REPO" \
+            --label agentic-ready \
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || true)
+
+          if [ -n "$EXISTING" ]; then
+            echo "Found existing agentic-ready issue #$EXISTING — commenting instead of creating."
+            gh issue comment --repo "$TARGET_REPO" "$EXISTING" \
+              --body "🔄 AgentReady re-installed — retriggering transformation."
+          else
+            echo "No existing issue found — creating one."
+            gh issue create \
+              --repo "$TARGET_REPO" \
+              --title "[agentic-ready] Transform this repository" \
+              --body "Automatically triggered by the AgentReady installer. This will analyse the repository and generate AI-agent-ready context files." \
+              --label "agentic-ready"
+          fi
+
+      - name: Report result
+        env:
+          TARGET_REPO: ${{ inputs.target_repo }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+          PROVIDER: ${{ inputs.provider }}
+        run: |
+          echo "✅ Installation complete!"
+          echo ""
+          echo "   Installed into ${TARGET_REPO}@${TARGET_BRANCH}:"
+          echo "   • .github/workflows/agentic-ready.yml          — issue trigger"
+          echo "   • .github/workflows/context-drift-detector.yml — weekly drift detection"
+          echo "   • .github/workflows/pr-review.yml              — AI-powered PR review"
+          echo "   • .github/workflows/agentic-ready-eval.yml     — eval-only (manual + push)"
+          echo "   • .github/ISSUE_TEMPLATE/agentic-ready.yml     — pre-filled issue form"
+          echo ""
+          echo "   A transformation issue has been created automatically."
+          echo "   Monitor progress: https://github.com/${TARGET_REPO}/actions"
+          echo ""
+          echo "   Required secrets in ${TARGET_REPO}:"
+          echo "   • API key for provider '$PROVIDER'"
+          echo "   • INSTALL_TOKEN — PAT with repo + workflow scopes"

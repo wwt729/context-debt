@@ -1,0 +1,168 @@
+name: Release — Semantic Versioning & GitHub Releases
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release:
+    name: Determine Version & Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.new_version }}
+      created: ${{ steps.create_release.outputs.created }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install agent-ready in development mode
+        run: |
+          pip install -e .
+
+      - name: Parse commits & determine version
+        id: version
+        run: |
+          # Skip if this is a version bump commit (avoid infinite loop)
+          LAST_MSG=$(git log -1 --format='%s')
+          if echo "$LAST_MSG" | grep -q '^chore: bump version'; then
+            echo "bump=none" >> $GITHUB_OUTPUT
+            echo "new_version=$(cat VERSION)" >> $GITHUB_OUTPUT
+            echo "current_version=$(cat VERSION)" >> $GITHUB_OUTPUT
+            echo "ℹ️  Skipping release — this is a version bump commit"
+            exit 0
+          fi
+
+          # Get current version from VERSION file
+          CURRENT_VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          # Get all commit messages since last tag
+          COMMITS=$(git log $(git describe --tags --abbrev=0 2>/dev/null)..HEAD --format='%B' 2>/dev/null || git log HEAD~10..HEAD --format='%B')
+          
+          # Check for breaking changes (major)
+          if echo "$COMMITS" | grep -q "BREAKING CHANGE:"; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            BUMP=major
+          # Check for features (minor)
+          elif echo "$COMMITS" | grep -q "^feat:"; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            BUMP=minor
+          # Check for fixes (patch)
+          elif echo "$COMMITS" | grep -q "^fix:"; then
+            PATCH=$((PATCH + 1))
+            BUMP=patch
+          # Check for docs/chore/style (no version bump if only these)
+          elif echo "$COMMITS" | grep -qE "^(docs|chore|style|test|refactor):"; then
+            BUMP=none
+          else
+            BUMP=none
+          fi
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+          
+          echo "✅ Version analysis:"
+          echo "   Current: $CURRENT_VERSION"
+          echo "   New: $NEW_VERSION"
+          echo "   Bump type: $BUMP"
+
+      - name: Only proceed if version bumped
+        if: steps.version.outputs.bump != 'none'
+        run: |
+          echo "🚀 Creating release for v${{ steps.version.outputs.new_version }}"
+
+      - name: Update version files
+        if: steps.version.outputs.bump != 'none'
+        run: |
+          echo "${{ steps.version.outputs.new_version }}" > VERSION
+          # Update canonical version in the Python package
+          sed -i 's/__version__ = "[0-9]*\.[0-9]*\.[0-9]*"/__version__ = "${{ steps.version.outputs.new_version }}"/' src/agent_ready/__init__.py
+          # Update embedded version string in cli.py (banner + mcp.json output)
+          sed -i 's/"version": "[0-9]*\.[0-9]*\.[0-9]*"/"version": "${{ steps.version.outputs.new_version }}"/' src/agent_ready/cli.py
+          echo "✅ Updated VERSION, src/agent_ready/__init__.py, and src/agent_ready/cli.py to v${{ steps.version.outputs.new_version }}"
+
+      - name: Generate changelog section
+        if: steps.version.outputs.bump != 'none'
+        id: changelog
+        run: |
+          python3 scripts/generate_changelog.py > /tmp/changelog_entry.txt
+          echo "CHANGELOG_ENTRY<<CHANGELOG_EOF" >> $GITHUB_ENV
+          cat /tmp/changelog_entry.txt >> $GITHUB_ENV
+          echo "CHANGELOG_EOF" >> $GITHUB_ENV
+
+      - name: Update CHANGELOG.md
+        if: steps.version.outputs.bump != 'none'
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.new_version }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          ENTRY_HEADER="## [$NEW_VERSION] — $TODAY"
+          ENTRY=$(printf '%s\n\n%s\n\n---\n' "$ENTRY_HEADER" "$(cat /tmp/changelog_entry.txt)")
+          # Prepend to first ## [ line
+          awk -v entry="$ENTRY" '/^## \[/{if(!done){print entry; done=1}} {print}' CHANGELOG.md > /tmp/cl_new.txt
+          mv /tmp/cl_new.txt CHANGELOG.md
+          echo "✅ Updated CHANGELOG.md with v$NEW_VERSION"
+
+      - name: Commit version & changelog bump
+        if: steps.version.outputs.bump != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add VERSION src/agent_ready/__init__.py src/agent_ready/cli.py CHANGELOG.md
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }} [skip ci]"
+          git push origin main
+
+      - name: Create git tag
+        if: steps.version.outputs.bump != 'none'
+        run: |
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.bump != 'none'
+        id: create_release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: Release v${{ steps.version.outputs.new_version }}
+          body_path: /tmp/changelog_entry.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.version.outputs.bump }}" = "none" ]; then
+            echo "ℹ️  No version bump (docs/chore/style commits only)"
+          else
+            echo "✅ Release v${{ steps.version.outputs.new_version }} created!"
+            echo "   - Version bumped: ${{ steps.version.outputs.bump }}"
+            echo "   - GitHub Release created"
+            echo "   - Git tag: v${{ steps.version.outputs.new_version }}"
+            echo "   - CHANGELOG.md updated"
+          fi

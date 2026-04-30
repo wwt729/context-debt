@@ -78,6 +78,7 @@ Typical workflow:
 2. Add `context-debt scan . --strict` to CI.
 3. Use `context-debt doctor .` when file discovery or config behavior looks off.
 4. Use `context-debt fix .` to preview safe fixes.
+5. Use `context-debt doctor . --verbose` when you need diagnostics plus the current finding basis in one place.
 
 ## What Gets Scanned
 
@@ -118,6 +119,7 @@ Options:
 - `--format <text|json>`: explicit output format
 - `--strict`: fail on `HIGH` and high-confidence `MEDIUM`
 - `--no-color`: disable ANSI color
+- `--verbose`: show explanation and extra issue metadata in text output
 - `--config <path>`: custom config file
 - `--max-issues <count>`: cap displayed issues while keeping full totals
 - `--include <glob>`: append include globs
@@ -128,6 +130,7 @@ Examples:
 ```bash
 context-debt scan .
 context-debt scan . --strict
+context-debt scan . --verbose
 context-debt scan . --format json --max-issues 20
 context-debt scan . --config ./context-debt.config.json
 ```
@@ -149,6 +152,10 @@ Print discovery diagnostics for the repository:
 - detected MCP files
 - discovered paths
 - discovered file counts by kind
+
+Options:
+
+- `--verbose`: include the current rule findings with explanations and resolved paths
 
 ### `fix`
 
@@ -181,22 +188,26 @@ Context Debt Report
 HIGH (2)
   missing-test-script - Referenced test command has no matching script
     File: CLAUDE.md:3
+    Confidence: high (0.98)
     Evidence: pnpm test was referenced, but package.json has no "test" script.
     Recommendation: Add scripts.test to package.json or update the instruction to the correct test command.
   referenced-file-missing - Referenced local file does not exist
     File: AGENTS.md:7
+    Confidence: high (0.99)
     Evidence: docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.
     Recommendation: Create the referenced file or update the instruction to point at an existing path.
 
 MEDIUM (1)
   stale-reference - Referenced file path appears stale after a rename
     File: README.md:12
+    Confidence: high (0.90)
     Evidence: docs/legacy-ci.md was referenced, but docs/ci.md exists instead.
     Recommendation: Update the instruction to the current path so agents follow the right file.
 
 LOW (1)
   token-waste - Repeated long instruction blocks waste context budget
     File: AGENTS.md
+    Confidence: medium (0.82)
     Evidence: 91 duplicated words were repeated across AGENTS.md and CLAUDE.md.
     Recommendation: Keep one canonical instruction block and reference it from the other files.
 
@@ -209,6 +220,8 @@ Interpretation:
 - `MEDIUM`: conflicting, stale, or oversized context
 - `LOW`: signal-quality or token-efficiency problems
 - `INFO`: informational findings
+
+Use `context-debt scan . --verbose` to include rule explanations and extra metadata such as resolved paths or related files.
 
 ## JSON Example
 
@@ -457,6 +470,8 @@ Use `context-debt` when you want to:
 - more autofixers beyond exact duplicate and missing-reference cleanup
 - richer rule-level documentation and examples
 - more real-repo regression fixtures to calibrate false positives
+
+Real-repo regression coverage is validated in CI. Every shipped rule must be exercised by third-party regression triage, or be explicitly listed in `regressions/manifest.json` with a coverage-gap reason until a fixture is added.
 
 ## Release Notes
 

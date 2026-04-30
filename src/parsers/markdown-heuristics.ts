@@ -33,6 +33,10 @@ export function shouldIgnorePathReference(
   index: number,
   referenceType: "markdown-link" | "inline-code" | "instruction-text",
 ): boolean {
+  if (isInsideContextFence(content, index)) {
+    return true;
+  }
+
   if (referenceType === "markdown-link") {
     return false;
   }

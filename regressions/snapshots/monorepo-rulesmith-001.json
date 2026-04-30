@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "monorepo-rulesmith-001",
+  "summary": {
+    "HIGH": 2,
+    "MEDIUM": 1,
+    "LOW": 1,
+    "INFO": 0
+  },
+  "strictFailureCount": 1,
+  "issues": [
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "AGENTS.md",
+      "line": 41,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "src/index.ts",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "referenced-file-missing",
+      "severity": "HIGH",
+      "file": "CLAUDE.md",
+      "line": 44,
+      "title": "Referenced local file does not exist",
+      "confidenceLabel": "high",
+      "resolvedPath": "src/index.ts",
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "oversized-context-file",
+      "severity": "MEDIUM",
+      "file": "README.md",
+      "line": null,
+      "title": "Context file is unusually large",
+      "confidenceLabel": "high",
+      "resolvedPath": null,
+      "relatedFiles": [],
+      "serverName": null
+    },
+    {
+      "ruleId": "token-waste",
+      "severity": "LOW",
+      "file": "AGENTS.md",
+      "line": null,
+      "title": "Repeated instructions are wasting context budget",
+      "confidenceLabel": "medium",
+      "resolvedPath": null,
+      "relatedFiles": [".github/copilot-instructions.md", "CLAUDE.md"],
+      "serverName": null
+    }
+  ]
+}

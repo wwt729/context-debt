@@ -4,8 +4,11 @@ import { fileURLToPath } from "node:url";
 import fg from "fast-glob";
 
 import {
+  findRedundantCoverageGapEntries,
+  findRegressionCoverageGaps,
   formatThirdPartyFixtures,
   loadRegressionManifest,
+  ruleIds,
 } from "../dist/index.js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -43,6 +46,25 @@ for (const repo of manifest.repos) {
   assertReasons(repo.triage.mustNotAppear, repo.id, "mustNotAppear");
 }
 
+const missingCoverage = findRegressionCoverageGaps(manifest, ruleIds);
+if (missingCoverage.length > 0) {
+  throw new Error(
+    `Missing real-regression coverage for rules: ${missingCoverage.join(", ")}.`,
+  );
+}
+
+const redundantCoverageGaps = findRedundantCoverageGapEntries(
+  manifest,
+  ruleIds,
+);
+if (redundantCoverageGaps.length > 0) {
+  throw new Error(
+    `Coverage gap entries are stale or unknown: ${redundantCoverageGaps
+      .map((entry) => entry.ruleId)
+      .join(", ")}.`,
+  );
+}
+
 const thirdPartyPath = resolve(
   projectRoot,
   "regressions/THIRD_PARTY_FIXTURES.md",
@@ -55,7 +77,7 @@ if (actualThirdParty !== expectedThirdParty) {
 }
 
 process.stdout.write(
-  `Validated ${manifest.repos.length} regression fixtures.\n`,
+  `Validated ${manifest.repos.length} regression fixtures and ${ruleIds.length} rule coverage entries.\n`,
 );
 
 function assertExists(relativePath, message) {

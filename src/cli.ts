@@ -35,12 +35,14 @@ type ScanOptions = {
   include?: string[];
   maxIssues?: string;
   strict?: boolean;
+  verbose?: boolean;
 };
 
 type FixOptions = {
   config?: string;
   exclude?: string[];
   include?: string[];
+  verbose?: boolean;
   write?: boolean;
 };
 
@@ -69,6 +71,7 @@ export async function runCli(
     .option("--format <format>", "output format: text or json")
     .option("--strict", "treat MEDIUM issues as failures")
     .option("--no-color", "disable colored terminal output")
+    .option("--verbose", "show explanation and rule metadata in text output")
     .option("--config <path>", "custom config path")
     .option("--max-issues <count>", "limit displayed issues")
     .option("--include <glob>", "additional include glob", collectOption, [])
@@ -95,6 +98,7 @@ export async function runCli(
   program
     .command("doctor")
     .argument("[path]", "repository path", ".")
+    .option("--verbose", "include current findings with explanations")
     .option("--config <path>", "custom config path")
     .option("--include <glob>", "additional include glob", collectOption, [])
     .option("--exclude <glob>", "additional exclude glob", collectOption, [])
@@ -129,7 +133,10 @@ async function handleScan(
     });
     const output = shouldUseJson(options)
       ? formatJsonReport(result)
-      : formatTextReport(result, { color: options.color ?? true });
+      : formatTextReport(result, {
+          color: options.color ?? true,
+          verbose: options.verbose ?? false,
+        });
 
     io.stdout(output);
     return getExitCode(result, options.strict ?? false);
@@ -193,12 +200,23 @@ async function handleDoctor(
     exclude: options.exclude,
     include: options.include,
   });
+  const preview = options.verbose
+    ? await scanRepository(path, {
+        configPath: options.config,
+        exclude: options.exclude,
+        include: options.include,
+      })
+    : null;
   const header = [
     `Node: ${process.version}`,
     `pnpm: ${pnpmCheck.status === 0 ? pnpmCheck.stdout.trim() : "not available"}`,
   ].join("\n");
 
-  io.stdout(`${header}\n${formatDoctorReport(diagnostics)}`);
+  io.stdout(
+    `${header}\n${formatDoctorReport(diagnostics, {
+      findingPreview: preview,
+    })}`,
+  );
   return 0;
 }
 

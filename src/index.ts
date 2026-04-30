@@ -10,7 +10,10 @@ export type {
   RegressionRepo,
 } from "./core/regressions.js";
 export {
+  collectRegressionRuleCoverage,
   findForbiddenRegressionIssues,
+  findRedundantCoverageGapEntries,
+  findRegressionCoverageGaps,
   findUntriagedRegressionIssues,
   formatThirdPartyFixtures,
   getRegressionManifestPath,
@@ -35,3 +38,4 @@ export type {
   ScanResult,
   Severity,
 } from "./core/types.js";
+export { ruleIds } from "./rules/index.js";

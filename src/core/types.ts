@@ -149,6 +149,7 @@ export type RuleModule = {
 
 export type ReportOptions = {
   color: boolean;
+  verbose?: boolean;
 };
 
 export type ScanOptions = {
@@ -180,6 +181,13 @@ export type DoctorResult = {
   scanExclude: string[];
   scanInclude: string[];
   ruleOverrides: DoctorRuleOverride[];
+};
+
+export type DoctorReportOptions = {
+  findingPreview?: Pick<
+    ScanResult,
+    "displayedIssues" | "issues" | "summary"
+  > | null;
 };
 
 export type FixEdit = {

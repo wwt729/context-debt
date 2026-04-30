@@ -183,6 +183,30 @@ describe("markdown extraction", () => {
     expect(extractPathReferences("README.md", mdcLinkContent)).toEqual([]);
   });
 
+  test("ignores path references inside example code fences", () => {
+    const fencedExampleContent = [
+      "Below is a minimal example of an AGENTS.md file:",
+      "",
+      "```markdown",
+      "Read `docs/missing.md` before changes.",
+      "See [Spec](./docs/example-spec.md).",
+      "```",
+      "",
+      "Read `docs/testing.md` before changes.",
+    ].join("\n");
+
+    expect(extractPathReferences("README.md", fencedExampleContent)).toEqual([
+      {
+        candidateKind: "local-file",
+        value: "docs/testing.md",
+        file: "README.md",
+        line: 8,
+        referenceType: "inline-code",
+        sourceKind: "readme",
+      },
+    ]);
+  });
+
   test("classifies non-local path candidates without treating them as local files", () => {
     const noisyContent = [
       "Use `spatie/laravel-permission`.",

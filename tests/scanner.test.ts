@@ -111,6 +111,23 @@ describe("scanRepository", () => {
     expect(result.issues[0]?.relatedFiles).toContain("docs/setup.md");
   });
 
+  test("reports stale-reference when a unique replacement path exists elsewhere in the repo", async () => {
+    const result = await scanRepository(fixturePath("stale-reference-unique"));
+
+    expect(result.summary).toEqual({ HIGH: 1, MEDIUM: 1, LOW: 0, INFO: 0 });
+    expect(
+      result.issues.some((issue) => issue.ruleId === "stale-reference"),
+    ).toBe(true);
+
+    const stale = result.issues.find(
+      (issue) => issue.ruleId === "stale-reference",
+    );
+    expect(stale?.resolvedPath).toBe(".github/copilot-instructions.md");
+    expect(stale?.relatedFiles).toContain(
+      "github-copilot/copilot-instructions.md",
+    );
+  });
+
   test("reports oversized-context-file as MEDIUM", async () => {
     const result = await scanRepository(fixturePath("oversized-context-file"));
     expect(result.summary.MEDIUM).toBe(1);
@@ -188,6 +205,14 @@ describe("scanRepository", () => {
   test("ignores README catalog examples that are not repository requirements", async () => {
     const result = await scanRepository(
       fixturePath("readme-catalog-regression"),
+    );
+
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
+
+  test("ignores missing paths that appear only inside example code fences", async () => {
+    const result = await scanRepository(
+      fixturePath("fenced-example-reference"),
     );
 
     expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
