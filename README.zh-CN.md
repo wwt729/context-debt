@@ -259,6 +259,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
       "recommendation": "Add scripts.test to package.json or update the instruction to the correct test command.",
       "sourceKind": "claude",
       "confidence": 0.98,
+      "autofixAvailable": true,
       "confidenceLabel": "high"
     },
     {
@@ -273,6 +274,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
       "recommendation": "Create the referenced file or update the instruction to point at an existing path.",
       "sourceKind": "agents",
       "confidence": 0.78,
+      "autofixAvailable": true,
       "confidenceLabel": "medium",
       "resolvedPath": "docs/release-playbook.md"
     }
@@ -288,6 +290,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 - `strictFailureCount`：开启 `--strict` 时会失败的问题数量
 - `confidence`：规则命中置信度
 - `confidenceLabel`：供 `--strict` 使用的稳定置信度分层
+- `autofixAvailable`：`context-debt fix` 是否能给出该规则的修复建议
 - `sourceKind`：问题来源文件类型
 - `resolvedPath`：归一化后的解析路径
 - `relatedFiles`：多文件问题涉及的其它文件
@@ -318,7 +321,8 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
   },
   "scan": {
     "include": [".cursor/**/*.mdc"],
-    "exclude": ["node_modules", "dist", "coverage", "tmp"]
+    "exclude": ["node_modules", "dist", "coverage", "tmp"],
+    "roots": ["packages/app"]
   },
   "thresholds": {
     "duplicateInstructionSimilarity": 0.72,
@@ -340,6 +344,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | `rules.referencedFileMissing.ignorePatterns` | 忽略正则模式 |
 | `scan.include` | 追加扫描包含模式 |
 | `scan.exclude` | 追加扫描排除模式 |
+| `scan.roots` | 将扫描范围限制在特定仓库相对根目录下 |
 | `thresholds.duplicateInstructionSimilarity` | 重复指令相似度阈值 |
 | `thresholds.oversizedContextChars` | 上下文文件过大阈值 |
 | `thresholds.tokenWasteMinWords` | token 浪费最小重复词数 |
@@ -361,6 +366,8 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | `conflicting-package-manager` | `HIGH` | 指令、锁文件与元数据对包管理器给出冲突信息 |
 | `dangerous-mcp-permission` | `HIGH` | MCP 服务权限过宽且缺少足够范围限制 |
 | `referenced-file-missing` | `HIGH` / `MEDIUM` | AI 文档引用了不存在的本地文件，严重级别取决于置信度 |
+| `contradictory-build-command` | `MEDIUM` | 不同文件推荐了互相冲突的构建命令 |
+| `contradictory-lint-command` | `MEDIUM` | 不同文件推荐了互相冲突的 lint 命令 |
 | `contradictory-test-command` | `MEDIUM` | 不同文件推荐了互相冲突的测试命令 |
 | `stale-reference` | `MEDIUM` | 已废弃风格的路径不存在，且仓库里找到了可能的替代路径 |
 | `oversized-context-file` | `MEDIUM` | 单个上下文文件过大，不适合高效提示 |

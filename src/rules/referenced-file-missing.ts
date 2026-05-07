@@ -58,6 +58,30 @@ export const referencedFileMissingRule: RuleModule = {
 
     return issues;
   },
+  autofix(context, issues, session) {
+    for (const issue of issues) {
+      const missingPath = issue.evidence.split(" was referenced")[0];
+      const file = context.contextFiles.find(
+        (entry) => entry.path === issue.file,
+      );
+
+      if (!file || !missingPath) {
+        continue;
+      }
+
+      session.updateFile(
+        file.path,
+        file.content,
+        (content) =>
+          content
+            .split("\n")
+            .filter((line) => !line.includes(missingPath))
+            .join("\n")
+            .replace(/\n{3,}/gu, "\n\n"),
+        `removed missing reference ${missingPath}`,
+      );
+    }
+  },
 };
 
 function getReferenceConfidence(

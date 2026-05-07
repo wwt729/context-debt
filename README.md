@@ -253,6 +253,7 @@ Use `context-debt scan . --verbose` to include rule explanations and extra metad
       "recommendation": "Add scripts.test to package.json or update the instruction to the correct test command.",
       "sourceKind": "claude",
       "confidence": 0.98,
+      "autofixAvailable": true,
       "confidenceLabel": "high"
     },
     {
@@ -267,6 +268,7 @@ Use `context-debt scan . --verbose` to include rule explanations and extra metad
       "recommendation": "Create the referenced file or update the instruction to point at an existing path.",
       "sourceKind": "agents",
       "confidence": 0.78,
+      "autofixAvailable": true,
       "confidenceLabel": "medium",
       "resolvedPath": "docs/release-playbook.md"
     }
@@ -282,6 +284,7 @@ Useful fields:
 - `strictFailureCount`: how many issues would fail `--strict`
 - `confidence`: rule confidence score
 - `confidenceLabel`: stable confidence tier used by `--strict`
+- `autofixAvailable`: whether `context-debt fix` can propose a rule-owned edit
 - `sourceKind`: where the issue originated
 - `resolvedPath`: normalized resolved path when available
 - `relatedFiles`: additional files involved in a multi-file finding
@@ -312,7 +315,8 @@ Create `context-debt.config.json`:
   },
   "scan": {
     "include": [".cursor/**/*.mdc"],
-    "exclude": ["node_modules", "dist", "coverage", "tmp"]
+    "exclude": ["node_modules", "dist", "coverage", "tmp"],
+    "roots": ["packages/app"]
   },
   "thresholds": {
     "duplicateInstructionSimilarity": 0.72,
@@ -334,6 +338,7 @@ Configuration reference:
 | `rules.referencedFileMissing.ignorePatterns` | Regex-based ignore patterns |
 | `scan.include` | Additional include globs |
 | `scan.exclude` | Additional exclude globs |
+| `scan.roots` | Limit discovery to specific repo-relative roots |
 | `thresholds.duplicateInstructionSimilarity` | Similarity threshold for `duplicate-instructions` |
 | `thresholds.oversizedContextChars` | Character limit for `oversized-context-file` |
 | `thresholds.tokenWasteMinWords` | Minimum duplicated words before `token-waste` fires |
@@ -355,6 +360,8 @@ Rule level semantics:
 | `conflicting-package-manager` | `HIGH` | Instructions, lockfiles, and metadata disagree on npm/pnpm/yarn |
 | `dangerous-mcp-permission` | `HIGH` | MCP servers imply broad capability without enough scoping |
 | `referenced-file-missing` | `HIGH` / `MEDIUM` | AI docs point to missing local files, with severity based on confidence |
+| `contradictory-build-command` | `MEDIUM` | Different files recommend conflicting build commands |
+| `contradictory-lint-command` | `MEDIUM` | Different files recommend conflicting lint commands |
 | `contradictory-test-command` | `MEDIUM` | Different files recommend conflicting test commands |
 | `stale-reference` | `MEDIUM` | A deprecated-looking path is missing and a likely replacement path exists |
 | `oversized-context-file` | `MEDIUM` | A context file is too large for efficient prompt use |

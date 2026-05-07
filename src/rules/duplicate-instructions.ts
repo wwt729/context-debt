@@ -1,7 +1,9 @@
 import type { Issue, RuleModule, ScanContext } from "../core/types.js";
 import {
   calculateUnitSimilarity,
+  extractContextUnits,
   getAiInstructionFiles,
+  getDuplicateUnits,
 } from "../utils/context-units.js";
 
 const minimumSharedUnits = 2;
@@ -67,6 +69,38 @@ export const duplicateInstructionsRule: RuleModule = {
 
     return issues;
   },
+  autofix(context, _issues, session) {
+    const files = getAiInstructionFiles(context);
+    const duplicates = getDuplicateUnits(files);
+
+    dedupeWithinFiles(files, session);
+
+    for (const [, units] of duplicates) {
+      const canonical = [...units].sort(compareUnits)[0];
+
+      for (const unit of units) {
+        if (unit.file === canonical.file) {
+          continue;
+        }
+
+        const file = files.find((entry) => entry.path === unit.file);
+        if (!file) {
+          continue;
+        }
+
+        session.updateFile(
+          file.path,
+          file.content,
+          (content) =>
+            removeFirstExactBlock(content, unit.raw).replace(
+              /\n{3,}/gu,
+              "\n\n",
+            ),
+          `removed duplicate instruction kept in ${canonical.file}`,
+        );
+      }
+    }
+  },
 };
 
 function buildEvidence(
@@ -105,4 +139,74 @@ function getDuplicateConfidence(score: number): number {
   }
 
   return 0.8;
+}
+
+function dedupeWithinFiles(
+  files: ReturnType<typeof getAiInstructionFiles>,
+  session: Parameters<NonNullable<RuleModule["autofix"]>>[2],
+): void {
+  for (const file of files) {
+    const seen = new Set<string>();
+
+    session.updateFile(
+      file.path,
+      file.content,
+      (content) => {
+        let next = content;
+
+        for (const unit of extractContextUnits(file)) {
+          if (!seen.has(unit.normalized)) {
+            seen.add(unit.normalized);
+            continue;
+          }
+
+          next = removeLastExactBlock(next, unit.raw).replace(
+            /\n{3,}/gu,
+            "\n\n",
+          );
+        }
+
+        return next;
+      },
+      "removed duplicate instructions in the same file",
+    );
+  }
+}
+
+function compareUnits(
+  left: ReturnType<typeof extractContextUnits>[number],
+  right: ReturnType<typeof extractContextUnits>[number],
+): number {
+  const priorityDiff =
+    fileKindPriority[left.kind] - fileKindPriority[right.kind];
+  if (priorityDiff !== 0) {
+    return priorityDiff;
+  }
+
+  return left.file.localeCompare(right.file);
+}
+
+function removeFirstExactBlock(content: string, raw: string): string {
+  return content.replace(
+    new RegExp(`(^|\\n)${escapeRegex(raw)}(?=\\n|$)`, "u"),
+    "$1",
+  );
+}
+
+function removeLastExactBlock(content: string, raw: string): string {
+  const pattern = new RegExp(`(^|\\n)${escapeRegex(raw)}(?=\\n|$)`, "gu");
+  const matches = [...content.matchAll(pattern)];
+
+  if (matches.length === 0) {
+    return content;
+  }
+
+  const lastMatch = matches[matches.length - 1];
+  const start = lastMatch.index ?? 0;
+  const fullMatch = lastMatch[0];
+  return `${content.slice(0, start)}${fullMatch.startsWith("\n") ? "\n" : ""}${content.slice(start + fullMatch.length)}`;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }

@@ -15,19 +15,24 @@ export function runRuleWithSettings(
     return [];
   }
 
-  return rule.check(context).map((issue) => applyIssueSetting(issue, setting));
+  return rule
+    .check(context)
+    .map((issue) => applyIssueSetting(issue, setting, rule));
 }
 
 function applyIssueSetting(
   issue: Issue,
   setting: { severity?: Issue["severity"] },
+  rule: RuleModule,
 ): Issue {
-  const nextIssue = setting.severity
-    ? { ...issue, severity: setting.severity }
-    : {
-        ...issue,
-        severity: resolveRuleSeverity(setting, issue.severity),
-      };
+  const nextIssue = {
+    ...issue,
+    severity: setting.severity
+      ? setting.severity
+      : resolveRuleSeverity(setting, issue.severity),
+    autofixAvailable:
+      issue.autofixAvailable ?? (rule.autofix ? true : undefined),
+  };
 
   return withDerivedIssueFields(nextIssue);
 }

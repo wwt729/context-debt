@@ -1,11 +1,11 @@
-import { primaryContextPatterns } from "../core/discovery.js";
+import { isPrimaryContextFile } from "../core/discovery.js";
 import type { Issue, RuleModule, ScanContext } from "../core/types.js";
 
 export const missingAiContextRule: RuleModule = {
   id: "missing-ai-context",
   check(context: ScanContext): Issue[] {
     const hasPrimaryContext = context.contextFiles.some((file) =>
-      matchesPrimaryContext(file.path),
+      isPrimaryContextFile(file.path),
     );
 
     if (hasPrimaryContext) {
@@ -29,12 +29,3 @@ export const missingAiContextRule: RuleModule = {
     ];
   },
 };
-
-function matchesPrimaryContext(path: string): boolean {
-  return primaryContextPatterns.some((pattern) => {
-    if (pattern.includes("**")) {
-      return path.startsWith(".cursor/rules/");
-    }
-    return path === pattern;
-  });
-}

@@ -156,6 +156,7 @@ export function formatDoctorReport(
     `Path: ${result.path}`,
     `Config path: ${result.configPath}`,
     `Config: ${result.configStatus}`,
+    `Scan roots: ${result.scanRoots.length > 0 ? result.scanRoots.join(", ") : "."}`,
     `Include globs: ${result.scanInclude.length > 0 ? result.scanInclude.join(", ") : "none"}`,
     `Exclude globs: ${result.scanExclude.length > 0 ? result.scanExclude.join(", ") : "none"}`,
     `Rule overrides: ${ruleOverrides}`,
