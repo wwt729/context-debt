@@ -1,0 +1,7 @@
+{
+  "name": "scoped-discovery",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "test": "echo root-test"
+  }
+}

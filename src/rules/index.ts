@@ -1,6 +1,8 @@
 import { runRuleWithSettings } from "../core/rule-settings.js";
 import type { Issue, RuleModule, ScanContext } from "../core/types.js";
 import { conflictingPackageManagerRule } from "./conflicting-package-manager.js";
+import { contradictoryBuildCommandRule } from "./contradictory-build-command.js";
+import { contradictoryLintCommandRule } from "./contradictory-lint-command.js";
 import { contradictoryTestCommandRule } from "./contradictory-test-command.js";
 import { dangerousMcpPermissionRule } from "./dangerous-mcp-permission.js";
 import { duplicateInstructionsRule } from "./duplicate-instructions.js";
@@ -23,6 +25,8 @@ export const rules: RuleModule[] = [
   conflictingPackageManagerRule,
   dangerousMcpPermissionRule,
   referencedFileMissingRule,
+  contradictoryBuildCommandRule,
+  contradictoryLintCommandRule,
   contradictoryTestCommandRule,
   staleReferenceRule,
   oversizedContextFileRule,

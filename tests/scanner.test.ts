@@ -94,6 +94,25 @@ describe("scanRepository", () => {
     expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
   });
 
+  test("supports scan roots to limit discovery scope", async () => {
+    const defaultResult = await scanRepository(
+      fixturePath("scoped-discovery"),
+      {
+        configPath: "missing-config.json",
+      },
+    );
+    expect(defaultResult.summary.HIGH).toBe(1);
+    expect(defaultResult.issues[0]?.resolvedPath).toBe("docs/root-only.md");
+
+    const scopedResult = await scanRepository(fixturePath("scoped-discovery"));
+    expect(scopedResult.summary).toEqual({
+      HIGH: 0,
+      MEDIUM: 0,
+      LOW: 0,
+      INFO: 0,
+    });
+  });
+
   test("reports contradictory-test-command as MEDIUM", async () => {
     const result = await scanRepository(
       fixturePath("contradictory-test-command"),
@@ -101,6 +120,20 @@ describe("scanRepository", () => {
     expect(result.summary.MEDIUM).toBe(1);
     expect(result.issues[0]?.id).toBe("contradictory-test-command");
     expect(result.issues[0]?.evidence).toContain("test ->");
+  });
+
+  test("reports contradictory build and lint commands as MEDIUM", async () => {
+    const result = await scanRepository(fixturePath("contradictory-commands"));
+
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 3, LOW: 0, INFO: 0 });
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      "contradictory-build-command",
+      "contradictory-lint-command",
+      "contradictory-test-command",
+    ]);
+    expect(result.issues[0]?.evidence).toContain("build ->");
+    expect(result.issues[1]?.evidence).toContain("lint ->");
+    expect(result.issues[2]?.evidence).toContain("test ->");
   });
 
   test("reports stale-reference as MEDIUM", async () => {

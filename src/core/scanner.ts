@@ -13,7 +13,7 @@ import { buildScanContext } from "./context.js";
 import {
   classifyContextFile,
   discoverPaths,
-  primaryContextPatterns,
+  isPrimaryContextFile,
 } from "./discovery.js";
 import type {
   DoctorResult,
@@ -142,15 +142,10 @@ export async function diagnoseRepository(
       packageJsonPresent: paths.includes("package.json"),
       path: rootDir,
       pnpmVersion: null,
-      primaryContextFiles: paths.filter((path) =>
-        primaryContextPatterns.some((pattern) =>
-          pattern.includes("**")
-            ? path.startsWith(".cursor/rules/")
-            : path === pattern,
-        ),
-      ),
+      primaryContextFiles: paths.filter((path) => isPrimaryContextFile(path)),
       scanExclude: config.scan.exclude,
       scanInclude: config.scan.include,
+      scanRoots: config.scan.roots,
       ruleOverrides: Object.entries(config.ruleSettings)
         .filter(([, setting]) => Object.keys(setting).length > 0)
         .map(([ruleId, setting]) => ({
@@ -188,6 +183,7 @@ export async function diagnoseRepository(
       primaryContextFiles: [],
       scanExclude: [],
       scanInclude: [],
+      scanRoots: [],
       ruleOverrides: [],
     };
   }

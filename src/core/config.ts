@@ -47,10 +47,12 @@ const configSchema = z.object({
       exclude: z
         .array(z.string())
         .default(["node_modules", "dist", "coverage"]),
+      roots: z.array(z.string()).default(["."]),
     })
     .default({
       include: [],
       exclude: ["node_modules", "dist", "coverage"],
+      roots: ["."],
     }),
   thresholds: z
     .object({
@@ -102,6 +104,7 @@ export function mergeScanConfig(
     scan: {
       include: [...config.scan.include, ...(overrides.include ?? [])],
       exclude: [...config.scan.exclude, ...(overrides.exclude ?? [])],
+      roots: config.scan.roots,
     },
   };
 }

@@ -88,6 +88,7 @@ export type PackageManagerEvidence = {
 export type ScanConfig = {
   include: string[];
   exclude: string[];
+  roots: string[];
 };
 
 export type ThresholdConfig = {
@@ -142,7 +143,28 @@ export type ScanResult = {
   totalIssues: number;
 };
 
+export type AutofixSession = {
+  readFile: (path: string, fallback?: string) => string;
+  replaceFile: (
+    path: string,
+    fallback: string | undefined,
+    after: string,
+    reason: string,
+  ) => void;
+  updateFile: (
+    path: string,
+    fallback: string | undefined,
+    updater: (content: string) => string,
+    reason: string,
+  ) => void;
+};
+
 export type RuleModule = {
+  autofix?: (
+    context: ScanContext,
+    issues: Issue[],
+    session: AutofixSession,
+  ) => void;
   check: (context: ScanContext) => Issue[];
   id: string;
 };
@@ -180,6 +202,7 @@ export type DoctorResult = {
   primaryContextFiles: string[];
   scanExclude: string[];
   scanInclude: string[];
+  scanRoots: string[];
   ruleOverrides: DoctorRuleOverride[];
 };
 

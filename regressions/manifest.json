@@ -1,6 +1,15 @@
 {
   "schemaVersion": 1,
-  "coverageGaps": [],
+  "coverageGaps": [
+    {
+      "ruleId": "contradictory-build-command",
+      "reason": "Current third-party fixtures do not yet include a stable real-world repository with clearly conflicting build guidance across AI context files."
+    },
+    {
+      "ruleId": "contradictory-lint-command",
+      "reason": "Current third-party fixtures do not yet include a stable real-world repository with clearly conflicting lint guidance across AI context files."
+    }
+  ],
   "repos": [
     {
       "id": "ai-agent-ready-001",

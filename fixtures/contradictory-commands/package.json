@@ -1,0 +1,11 @@
+{
+  "name": "contradictory-commands",
+  "scripts": {
+    "test": "echo test",
+    "test:watch": "echo test-watch",
+    "build": "echo build",
+    "build:prod": "echo build-prod",
+    "lint": "echo lint",
+    "lint:fix": "echo lint-fix"
+  }
+}

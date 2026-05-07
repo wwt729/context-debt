@@ -140,6 +140,7 @@ describe("runCli", () => {
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("context-debt doctor");
     expect(result.stdout).toContain("context-debt.config.json");
+    expect(result.stdout).toContain("Scan roots: .");
     expect(result.stdout).toContain("docs/**/*.md");
     expect(result.stdout).toContain("missing-lint-script (level=off)");
     expect(result.stdout).toContain("docs/custom.md");
@@ -180,6 +181,18 @@ describe("runCli", () => {
     expect(result.stderr).toBe("");
     expect(result.stdout).toContain("context-debt doctor");
   });
+
+  test("doctor reports configured scan roots", async () => {
+    const result = await runCliWithOutput([
+      "doctor",
+      fixturePath("scoped-discovery"),
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("Scan roots: packages/app");
+    expect(result.stdout).toContain("packages/app/AGENTS.md");
+    expect(result.stdout).not.toContain("Discovered paths: AGENTS.md");
+  });
 });
 
 describe("init command", () => {
@@ -214,6 +227,7 @@ describe("init command", () => {
       scan: {
         include: [],
         exclude: ["node_modules", "dist", "coverage"],
+        roots: ["."],
       },
       thresholds: {
         duplicateInstructionSimilarity: 0.6,

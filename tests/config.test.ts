@@ -38,6 +38,7 @@ describe("config", () => {
     const config = loadConfig(dir, "custom.json");
     expect(config.scan.include).toEqual(["docs/**/*.md"]);
     expect(config.scan.exclude).toEqual(["node_modules", "tmp"]);
+    expect(config.scan.roots).toEqual(["."]);
     expect(config.thresholds.oversizedContextChars).toBe(5000);
     expect(config.thresholds.duplicateInstructionSimilarity).toBe(0.6);
     expect(config.thresholds.tokenWasteMinWords).toBe(40);
@@ -159,6 +160,23 @@ describe("config", () => {
       oversizedContextChars: 9000,
       tokenWasteMinWords: 12,
     });
+  });
+
+  test("loads scan roots", () => {
+    const dir = createTempDir("context-debt-config-");
+    const configPath = join(dir, "custom.json");
+
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        scan: {
+          roots: ["packages/app", "tools/docs"],
+        },
+      }),
+    );
+
+    const config = loadConfig(dir, "custom.json");
+    expect(config.scan.roots).toEqual(["packages/app", "tools/docs"]);
   });
 
   test("maps rule levels to stable effective severities", () => {
