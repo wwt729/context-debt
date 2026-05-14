@@ -9,6 +9,8 @@ import { duplicateInstructionsRule } from "./duplicate-instructions.js";
 import { missingAiContextRule } from "./missing-ai-context.js";
 import { missingBuildScriptRule } from "./missing-build-script.js";
 import { missingLintScriptRule } from "./missing-lint-script.js";
+import { missingPythonLintCommandRule } from "./missing-python-lint-command.js";
+import { missingPythonTestCommandRule } from "./missing-python-test-command.js";
 import { missingTestScriptRule } from "./missing-test-script.js";
 import { oversizedContextFileRule } from "./oversized-context-file.js";
 import { referencedFileMissingRule } from "./referenced-file-missing.js";
@@ -20,6 +22,8 @@ import { tooManyGlobalRulesRule } from "./too-many-global-rules.js";
 export const rules: RuleModule[] = [
   missingAiContextRule,
   missingTestScriptRule,
+  missingPythonTestCommandRule,
+  missingPythonLintCommandRule,
   missingBuildScriptRule,
   missingLintScriptRule,
   conflictingPackageManagerRule,

@@ -33,6 +33,7 @@ export async function fixRepository(
   const config = mergeScanConfig(loadedConfig, {
     include: options.include,
     exclude: options.exclude,
+    roots: options.roots,
   });
   const context = await buildScanContext(rootDir, config);
   const scanResult = await scanRepository(inputPath, options);

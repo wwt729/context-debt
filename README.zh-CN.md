@@ -92,6 +92,9 @@ context-debt fix . --write
 - Windsurf 相关指令文件
 - `README.md`
 - `package.json`
+- `pyproject.toml`
+- `poetry.lock`
+- `uv.lock`
 - MCP 配置文件
 
 它不是做“全文语义理解”，而是围绕这些结构化信号做检测：
@@ -122,6 +125,7 @@ context-debt scan [path]
 - `--verbose`：在文本输出中显示 explanation 和额外问题元数据
 - `--config <path>`：指定自定义配置文件
 - `--max-issues <count>`：限制显示的问题数量，但保留完整汇总
+- `--root <path>`：将扫描范围限制到仓库相对根目录，可重复传入多个
 - `--include <glob>`：追加 include glob
 - `--exclude <glob>`：追加 exclude glob
 
@@ -130,6 +134,7 @@ context-debt scan [path]
 ```bash
 context-debt scan .
 context-debt scan . --strict
+context-debt scan . --root packages/app
 context-debt scan . --verbose
 context-debt scan . --format json --max-issues 20
 context-debt scan . --config ./context-debt.config.json
@@ -155,6 +160,7 @@ context-debt doctor [path]
 
 选项：
 
+- `--root <path>`：将扫描范围限制到仓库相对根目录；重复传入时会覆盖配置文件中的 roots
 - `--verbose`：附带输出当前规则命中结果、explanation 和 resolved path
 
 适合排查：
@@ -177,6 +183,14 @@ context-debt fix [path] --write
 - 删除引用缺失文件的行
 - 删除完全重复的指令块
 - 生成聚合版 `context-debt.compact.md`
+
+选项：
+
+- `--root <path>`：将扫描范围限制到仓库相对根目录；重复传入时会覆盖配置文件中的 roots
+- `--config <path>`：指定自定义配置文件
+- `--include <glob>`：追加 include glob
+- `--exclude <glob>`：追加 exclude glob
+- `--write`：直接写入修复结果
 
 ### `init`
 
@@ -344,7 +358,7 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | `rules.referencedFileMissing.ignorePatterns` | 忽略正则模式 |
 | `scan.include` | 追加扫描包含模式 |
 | `scan.exclude` | 追加扫描排除模式 |
-| `scan.roots` | 将扫描范围限制在特定仓库相对根目录下 |
+| `scan.roots` | 将扫描范围限制在特定仓库相对根目录下；若传入 CLI `--root`，则以 CLI 为准 |
 | `thresholds.duplicateInstructionSimilarity` | 重复指令相似度阈值 |
 | `thresholds.oversizedContextChars` | 上下文文件过大阈值 |
 | `thresholds.tokenWasteMinWords` | token 浪费最小重复词数 |
@@ -361,9 +375,11 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 | Rule | Severity | 中文说明 |
 | --- | --- | --- |
 | `missing-test-script` | `HIGH` | AI 文档引用了 `package.json` 中不存在的测试脚本 |
+| `missing-python-test-command` | `HIGH` | AI 文档引用了 Python `pytest` 测试命令，但仓库里没有对应的本地 pytest 工具信号 |
+| `missing-python-lint-command` | `HIGH` | AI 文档引用了 Python `ruff` 检查命令，但仓库里没有对应的本地 ruff 工具信号 |
 | `missing-build-script` | `HIGH` | AI 文档引用了不存在的构建脚本 |
 | `missing-lint-script` | `HIGH` | AI 文档引用了不存在的 lint 脚本 |
-| `conflicting-package-manager` | `HIGH` | 指令、锁文件与元数据对包管理器给出冲突信息 |
+| `conflicting-package-manager` | `HIGH` | 指令、锁文件与元数据在 npm/pnpm/yarn/uv/poetry/pip 等包管理器选择上给出冲突信息 |
 | `dangerous-mcp-permission` | `HIGH` | MCP 服务权限过宽且缺少足够范围限制 |
 | `referenced-file-missing` | `HIGH` / `MEDIUM` | AI 文档引用了不存在的本地文件，严重级别取决于置信度 |
 | `contradictory-build-command` | `MEDIUM` | 不同文件推荐了互相冲突的构建命令 |

@@ -1,0 +1,6 @@
+[project]
+name = "python-ruff-context"
+dependencies = ["ruff>=0.12"]
+
+[tool.ruff]
+line-length = 100

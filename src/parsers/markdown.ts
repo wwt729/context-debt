@@ -15,6 +15,7 @@ import {
   shouldIgnorePathReference,
 } from "./markdown-heuristics.js";
 import { classifyPathCandidate } from "./path-helpers.js";
+import { extractPythonCommands } from "./python-test-commands.js";
 import { getLineNumber, uniqueBy } from "./text.js";
 
 const markdownLinkPattern = /\[[^\]]+\]\(([^)]+)\)/g;
@@ -24,7 +25,7 @@ const pathTokenPattern =
 const flagValuePattern =
   /--[\w-]+(?:=|\s+)((?:\.{0,2}\/|\/|\.?[\w-]+\/)[^\s)`,:;]+)/g;
 const explicitManagerPattern =
-  /\b(?:use|prefer|install with|run with)\s+(pnpm|npm|yarn)\b/gi;
+  /\b(?:use|prefer|install with|run with)\s+(pnpm|npm|yarn|uv|poetry|pip)\b/gi;
 
 type ParsedMarkdownContext = {
   commands: ExtractedCommand[];
@@ -47,7 +48,9 @@ export function extractCommands(
   file: string,
   content: string,
 ): ExtractedCommand[] {
-  const commands: ExtractedCommand[] = [];
+  const commands: ExtractedCommand[] = [
+    ...extractPythonCommands(file, content),
+  ];
 
   for (const pattern of commandPatterns) {
     for (const match of content.matchAll(pattern)) {
@@ -66,6 +69,7 @@ export function extractCommands(
       commands.push({
         category: getCommandCategory(scriptName),
         command: match[0],
+        commandKind: "node-script",
         manager,
         scriptName,
         file,
@@ -166,6 +170,10 @@ export function extractPackageManagers(
   }
 
   for (const command of extractCommands(file, content)) {
+    if (!command.manager || command.commandKind !== "node-script") {
+      continue;
+    }
+
     evidence.push({
       manager: command.manager,
       file,

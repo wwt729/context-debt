@@ -21,6 +21,7 @@ export const discoveryPatterns = [
   "pnpm-lock.yaml",
   "package-lock.json",
   "yarn.lock",
+  "poetry.lock",
   "pyproject.toml",
   "uv.lock",
   "Cargo.toml",

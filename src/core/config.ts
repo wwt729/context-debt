@@ -99,12 +99,17 @@ export function mergeScanConfig(
   config: ContextDebtConfig,
   overrides: Partial<ScanConfig>,
 ): ContextDebtConfig {
+  const roots =
+    overrides.roots && overrides.roots.length > 0
+      ? [...overrides.roots]
+      : config.scan.roots;
+
   return {
     ...config,
     scan: {
       include: [...config.scan.include, ...(overrides.include ?? [])],
       exclude: [...config.scan.exclude, ...(overrides.exclude ?? [])],
-      roots: config.scan.roots,
+      roots,
     },
   };
 }

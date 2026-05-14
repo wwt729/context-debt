@@ -16,6 +16,48 @@ describe("scanRepository", () => {
     expect(result.issues[0]?.id).toBe("missing-test-script");
   });
 
+  test("reports missing-python-test-command as HIGH", async () => {
+    const result = await scanRepository(
+      fixturePath("missing-python-test-command"),
+    );
+    expect(result.summary.HIGH).toBe(1);
+    expect(result.issues[0]?.id).toBe("missing-python-test-command");
+    expect(result.issues[0]?.evidence).toContain("pytest -q");
+  });
+
+  test("does not report missing-python-test-command when pyproject carries pytest tooling", async () => {
+    const result = await scanRepository(fixturePath("python-pytest-context"));
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
+
+  test("does not report missing-python-test-command for self-contained uv pytest commands", async () => {
+    const result = await scanRepository(
+      fixturePath("self-contained-python-test-command"),
+    );
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
+
+  test("reports missing-python-lint-command as HIGH", async () => {
+    const result = await scanRepository(
+      fixturePath("missing-python-lint-command"),
+    );
+    expect(result.summary.HIGH).toBe(1);
+    expect(result.issues[0]?.id).toBe("missing-python-lint-command");
+    expect(result.issues[0]?.evidence).toContain("ruff check .");
+  });
+
+  test("does not report missing-python-lint-command when pyproject carries ruff tooling", async () => {
+    const result = await scanRepository(fixturePath("python-ruff-context"));
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
+
+  test("does not report missing-python-lint-command for self-contained uv ruff commands", async () => {
+    const result = await scanRepository(
+      fixturePath("self-contained-python-lint-command"),
+    );
+    expect(result.summary).toEqual({ HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 });
+  });
+
   test("reports missing-build-script as HIGH", async () => {
     const result = await scanRepository(fixturePath("missing-build-script"));
     expect(result.summary.HIGH).toBe(1);
@@ -43,6 +85,39 @@ describe("scanRepository", () => {
     expect(result.issues[0]?.id).toBe("conflicting-package-manager");
     expect(result.issues[0]?.evidence).toContain("npm ->");
     expect(result.issues[0]?.evidence).toContain("pnpm ->");
+  });
+
+  test("reports conflicting python package manager guidance as HIGH", async () => {
+    const result = await scanRepository(
+      fixturePath("conflicting-python-package-manager"),
+    );
+
+    expect(result.summary.HIGH).toBe(1);
+    expect(result.issues[0]?.id).toBe("conflicting-package-manager");
+    expect(result.issues[0]?.evidence).toContain("uv -> AGENTS.md:3");
+    expect(result.issues[0]?.evidence).toContain("poetry -> poetry.lock");
+    expect(result.issues[0]?.relatedFiles).toEqual([
+      "AGENTS.md",
+      "poetry.lock",
+    ]);
+  });
+
+  test("does not report conflicts when package managers belong to different ecosystems", async () => {
+    const result = await scanRepository(
+      fixturePath("mixed-package-manager-families"),
+    );
+
+    expect(
+      result.issues.some(
+        (issue) => issue.ruleId === "conflicting-package-manager",
+      ),
+    ).toBe(false);
+    expect(result.summary).toEqual({
+      HIGH: 0,
+      MEDIUM: 0,
+      LOW: 0,
+      INFO: 0,
+    });
   });
 
   test("reports dangerous-mcp-permission as HIGH", async () => {
@@ -106,6 +181,20 @@ describe("scanRepository", () => {
 
     const scopedResult = await scanRepository(fixturePath("scoped-discovery"));
     expect(scopedResult.summary).toEqual({
+      HIGH: 0,
+      MEDIUM: 0,
+      LOW: 0,
+      INFO: 0,
+    });
+  });
+
+  test("supports cli-style roots without requiring a config file", async () => {
+    const result = await scanRepository(fixturePath("scoped-discovery"), {
+      configPath: "missing-config.json",
+      roots: ["packages/app"],
+    });
+
+    expect(result.summary).toEqual({
       HIGH: 0,
       MEDIUM: 0,
       LOW: 0,

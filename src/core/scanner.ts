@@ -34,6 +34,7 @@ export async function scanRepository(
   const config = mergeScanConfig(loadedConfig, {
     include: options.include,
     exclude: options.exclude,
+    roots: options.roots,
   });
   const context = await buildScanContext(rootDir, config);
   const allIssues = runRules(context).sort(compareIssues);
@@ -99,7 +100,10 @@ function compareIssues(
 
 export async function diagnoseRepository(
   inputPath: string,
-  options: Pick<ScanOptions, "configPath" | "include" | "exclude"> = {},
+  options: Pick<
+    ScanOptions,
+    "configPath" | "include" | "exclude" | "roots"
+  > = {},
 ): Promise<DoctorResult> {
   const rootDir = resolve(inputPath);
   const configPath = options.configPath
@@ -113,6 +117,7 @@ export async function diagnoseRepository(
     const config = mergeScanConfig(loadedConfig, {
       include: options.include,
       exclude: options.exclude,
+      roots: options.roots,
     });
     const paths = await discoverPaths(rootDir, config);
     const kindCounts = {

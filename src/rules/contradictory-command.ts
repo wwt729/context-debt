@@ -17,7 +17,9 @@ export function createContradictoryCommandRule(
     id: options.ruleId,
     check(context: ScanContext): Issue[] {
       const commands = context.commands.filter(
-        (command) => command.category === options.category,
+        (command) =>
+          command.commandKind === "node-script" &&
+          command.category === options.category,
       );
 
       if (new Set(commands.map((command) => command.file)).size < 2) {

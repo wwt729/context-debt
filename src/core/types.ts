@@ -39,7 +39,13 @@ export type ContextFile = {
   content: string;
 };
 
-export type PackageManagerName = "npm" | "pnpm" | "yarn";
+export type PackageManagerName =
+  | "npm"
+  | "pnpm"
+  | "yarn"
+  | "uv"
+  | "poetry"
+  | "pip";
 
 export type ParsedPackageJson = {
   path: string;
@@ -50,10 +56,12 @@ export type ParsedPackageJson = {
 export type ExtractedCommand = {
   category: "test" | "build" | "lint";
   command: string;
-  manager: PackageManagerName;
+  commandKind: "node-script" | "python-test" | "python-lint";
   scriptName: string;
+  manager?: PackageManagerName;
   file: string;
   line: number;
+  selfContained?: boolean;
   sourceKind: ContextFileKind;
 };
 
@@ -83,6 +91,28 @@ export type PackageManagerEvidence = {
   evidence: string;
   source: "instruction" | "lockfile" | "package-json";
   sourceKind: ContextFileKind;
+};
+
+export type ToolingFamily = "node" | "python";
+
+export type PackageManagerFamilySummary = {
+  family: ToolingFamily;
+  managers: PackageManagerName[];
+  evidenceByManager: Map<PackageManagerName, PackageManagerEvidence[]>;
+};
+
+export type ProjectToolingAnalysis = {
+  packageJsonByDirectory: Map<string, ParsedPackageJson>;
+  packageManagersByName: Map<PackageManagerName, PackageManagerEvidence[]>;
+  packageManagerFamilies: PackageManagerFamilySummary[];
+  pythonTestTooling: {
+    evidenceFiles: string[];
+    hasPytest: boolean;
+  };
+  pythonLintTooling: {
+    evidenceFiles: string[];
+    hasRuff: boolean;
+  };
 };
 
 export type ScanConfig = {
@@ -130,6 +160,7 @@ export type ScanContext = {
   packageManagers: PackageManagerEvidence[];
   discoveredPaths: Set<string>;
   config: ContextDebtConfig;
+  tooling: ProjectToolingAnalysis;
 };
 
 export type ScanSummary = Record<Severity, number>;
@@ -179,6 +210,7 @@ export type ScanOptions = {
   exclude?: string[];
   include?: string[];
   maxIssues?: number;
+  roots?: string[];
 };
 
 export type DoctorRuleOverride = {

@@ -12,6 +12,7 @@ export function createMissingScriptIssues(
   options: ScriptRuleOptions,
 ): Issue[] {
   return context.commands
+    .filter((command) => command.commandKind === "node-script")
     .filter((command) => command.category === options.category)
     .filter((command) => !hasMatchingScript(context, command))
     .map((command) => ({

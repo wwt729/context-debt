@@ -92,6 +92,9 @@ Typical workflow:
 - Windsurf-related instruction files
 - `README.md`
 - `package.json`
+- `pyproject.toml`
+- `poetry.lock`
+- `uv.lock`
 - MCP config files
 
 It does not try to "understand everything". It checks structured signals such as:
@@ -122,6 +125,7 @@ Options:
 - `--verbose`: show explanation and extra issue metadata in text output
 - `--config <path>`: custom config file
 - `--max-issues <count>`: cap displayed issues while keeping full totals
+- `--root <path>`: limit discovery to a repo-relative root; repeat to scan multiple roots
 - `--include <glob>`: append include globs
 - `--exclude <glob>`: append exclude globs
 
@@ -130,6 +134,7 @@ Examples:
 ```bash
 context-debt scan .
 context-debt scan . --strict
+context-debt scan . --root packages/app
 context-debt scan . --verbose
 context-debt scan . --format json --max-issues 20
 context-debt scan . --config ./context-debt.config.json
@@ -155,6 +160,7 @@ Print discovery diagnostics for the repository:
 
 Options:
 
+- `--root <path>`: limit discovery to a repo-relative root; repeat to override config roots
 - `--verbose`: include the current rule findings with explanations and resolved paths
 
 ### `fix`
@@ -171,6 +177,14 @@ Current fixers:
 - remove lines that reference missing local files
 - remove exact duplicate instruction units
 - generate `context-debt.compact.md` from canonical instruction blocks
+
+Options:
+
+- `--root <path>`: limit discovery to a repo-relative root; repeat to override config roots
+- `--config <path>`: custom config file
+- `--include <glob>`: append include globs
+- `--exclude <glob>`: append exclude globs
+- `--write`: apply edits instead of previewing
 
 ### `init`
 
@@ -338,7 +352,7 @@ Configuration reference:
 | `rules.referencedFileMissing.ignorePatterns` | Regex-based ignore patterns |
 | `scan.include` | Additional include globs |
 | `scan.exclude` | Additional exclude globs |
-| `scan.roots` | Limit discovery to specific repo-relative roots |
+| `scan.roots` | Limit discovery to specific repo-relative roots; overridden by CLI `--root` |
 | `thresholds.duplicateInstructionSimilarity` | Similarity threshold for `duplicate-instructions` |
 | `thresholds.oversizedContextChars` | Character limit for `oversized-context-file` |
 | `thresholds.tokenWasteMinWords` | Minimum duplicated words before `token-waste` fires |
@@ -355,9 +369,11 @@ Rule level semantics:
 | Rule | Severity | What it checks |
 | --- | --- | --- |
 | `missing-test-script` | `HIGH` | AI docs reference a test command missing from `package.json` |
+| `missing-python-test-command` | `HIGH` | AI docs reference a Python `pytest` command, but the repo has no matching local pytest tooling signal |
+| `missing-python-lint-command` | `HIGH` | AI docs reference a Python `ruff` command, but the repo has no matching local ruff tooling signal |
 | `missing-build-script` | `HIGH` | AI docs reference a build command missing from `package.json` |
 | `missing-lint-script` | `HIGH` | AI docs reference a lint command missing from `package.json` |
-| `conflicting-package-manager` | `HIGH` | Instructions, lockfiles, and metadata disagree on npm/pnpm/yarn |
+| `conflicting-package-manager` | `HIGH` | Instructions, lockfiles, and metadata disagree on package manager choice across npm/pnpm/yarn/uv/poetry/pip |
 | `dangerous-mcp-permission` | `HIGH` | MCP servers imply broad capability without enough scoping |
 | `referenced-file-missing` | `HIGH` / `MEDIUM` | AI docs point to missing local files, with severity based on confidence |
 | `contradictory-build-command` | `MEDIUM` | Different files recommend conflicting build commands |

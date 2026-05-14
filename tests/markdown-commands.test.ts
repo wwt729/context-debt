@@ -19,6 +19,7 @@ describe("markdown command extraction heuristics", () => {
       {
         category: "build",
         command: "pnpm build",
+        commandKind: "node-script",
         file: "README.md",
         line: 8,
         manager: "pnpm",
@@ -40,6 +41,7 @@ describe("markdown command extraction heuristics", () => {
       {
         category: "build",
         command: "npm run build",
+        commandKind: "node-script",
         file: "AGENTS.md",
         line: 4,
         manager: "npm",
@@ -65,6 +67,7 @@ describe("markdown command extraction heuristics", () => {
       {
         category: "test",
         command: "npm test",
+        commandKind: "node-script",
         file: ".cursor/rules/workflow.mdc",
         line: 8,
         manager: "npm",
@@ -92,6 +95,7 @@ describe("markdown command extraction heuristics", () => {
       {
         category: "test",
         command: "npm test",
+        commandKind: "node-script",
         file: ".cursor/rules/workflow.mdc",
         line: 10,
         manager: "npm",

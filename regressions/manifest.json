@@ -8,6 +8,14 @@
     {
       "ruleId": "contradictory-lint-command",
       "reason": "Current third-party fixtures do not yet include a stable real-world repository with clearly conflicting lint guidance across AI context files."
+    },
+    {
+      "ruleId": "missing-python-lint-command",
+      "reason": "Current third-party fixtures do not yet include a stable real-world repository whose AI docs reference local ruff commands without matching repository tooling."
+    },
+    {
+      "ruleId": "missing-python-test-command",
+      "reason": "Current third-party fixtures do not yet include a stable real-world repository whose AI docs reference local pytest commands without matching repository tooling."
     }
   ],
   "repos": [

@@ -34,6 +34,7 @@ type ScanOptions = {
   format?: "json" | "text";
   include?: string[];
   maxIssues?: string;
+  root?: string[];
   strict?: boolean;
   verbose?: boolean;
 };
@@ -42,6 +43,7 @@ type FixOptions = {
   config?: string;
   exclude?: string[];
   include?: string[];
+  root?: string[];
   verbose?: boolean;
   write?: boolean;
 };
@@ -69,11 +71,17 @@ export async function runCli(
     .argument("[path]", "repository path to scan", ".")
     .option("--json", "output machine-readable JSON")
     .option("--format <format>", "output format: text or json")
-    .option("--strict", "treat MEDIUM issues as failures")
+    .option("--strict", "fail on HIGH and high-confidence MEDIUM issues")
     .option("--no-color", "disable colored terminal output")
     .option("--verbose", "show explanation and rule metadata in text output")
     .option("--config <path>", "custom config path")
     .option("--max-issues <count>", "limit displayed issues")
+    .option(
+      "--root <path>",
+      "limit discovery to a repo-relative root",
+      collectOption,
+      [],
+    )
     .option("--include <glob>", "additional include glob", collectOption, [])
     .option("--exclude <glob>", "additional exclude glob", collectOption, [])
     .action(async (path: string, options: ScanOptions) => {
@@ -89,6 +97,12 @@ export async function runCli(
     .argument("[path]", "repository path to fix", ".")
     .option("--write", "apply edits instead of previewing")
     .option("--config <path>", "custom config path")
+    .option(
+      "--root <path>",
+      "limit discovery to a repo-relative root",
+      collectOption,
+      [],
+    )
     .option("--include <glob>", "additional include glob", collectOption, [])
     .option("--exclude <glob>", "additional exclude glob", collectOption, [])
     .action(async (path: string, options: FixOptions) => {
@@ -100,6 +114,12 @@ export async function runCli(
     .argument("[path]", "repository path", ".")
     .option("--verbose", "include current findings with explanations")
     .option("--config <path>", "custom config path")
+    .option(
+      "--root <path>",
+      "limit discovery to a repo-relative root",
+      collectOption,
+      [],
+    )
     .option("--include <glob>", "additional include glob", collectOption, [])
     .option("--exclude <glob>", "additional exclude glob", collectOption, [])
     .action(async (path: string, options: FixOptions) => {
@@ -130,6 +150,7 @@ async function handleScan(
       exclude: options.exclude,
       include: options.include,
       maxIssues: parseIntegerOption(options.maxIssues),
+      roots: options.root,
     });
     const output = shouldUseJson(options)
       ? formatJsonReport(result)
@@ -160,6 +181,7 @@ async function handleFix(
         configPath: options.config,
         exclude: options.exclude,
         include: options.include,
+        roots: options.root,
       },
       options.write ?? false,
     );
@@ -199,12 +221,14 @@ async function handleDoctor(
     configPath: options.config,
     exclude: options.exclude,
     include: options.include,
+    roots: options.root,
   });
   const preview = options.verbose
     ? await scanRepository(path, {
         configPath: options.config,
         exclude: options.exclude,
         include: options.include,
+        roots: options.root,
       })
     : null;
   const header = [

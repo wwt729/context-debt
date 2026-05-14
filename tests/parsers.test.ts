@@ -41,6 +41,7 @@ describe("markdown extraction", () => {
       {
         category: "test",
         command: "pnpm test",
+        commandKind: "node-script",
         manager: "pnpm",
         scriptName: "test",
         file: "AGENTS.md",
@@ -50,6 +51,7 @@ describe("markdown extraction", () => {
       {
         category: "build",
         command: "npm run build",
+        commandKind: "node-script",
         manager: "npm",
         scriptName: "build",
         file: "AGENTS.md",
@@ -71,6 +73,7 @@ describe("markdown extraction", () => {
       {
         category: "test",
         command: "pnpm run test:unit",
+        commandKind: "node-script",
         manager: "pnpm",
         scriptName: "test:unit",
         file: "README.md",
@@ -80,6 +83,7 @@ describe("markdown extraction", () => {
       {
         category: "build",
         command: "yarn build:prod",
+        commandKind: "node-script",
         manager: "yarn",
         scriptName: "build:prod",
         file: "README.md",
@@ -89,6 +93,7 @@ describe("markdown extraction", () => {
       {
         category: "test",
         command: "npm run test:e2e",
+        commandKind: "node-script",
         manager: "npm",
         scriptName: "test:e2e",
         file: "README.md",
@@ -98,10 +103,93 @@ describe("markdown extraction", () => {
       {
         category: "lint",
         command: "pnpm lint:fix",
+        commandKind: "node-script",
         manager: "pnpm",
         scriptName: "lint:fix",
         file: "README.md",
         line: 4,
+        sourceKind: "readme",
+      },
+    ]);
+  });
+
+  test("extracts python test commands", () => {
+    const pythonCommandContent = [
+      "Run `pytest -q` before changes.",
+      "Run `poetry run pytest tests/` for the packaged environment.",
+      "Run `uv run --with pytest --with requests pytest -q tests/` for ephemeral checks.",
+    ].join("\n");
+
+    expect(extractCommands("AGENTS.md", pythonCommandContent)).toEqual([
+      {
+        category: "test",
+        command: "pytest -q",
+        commandKind: "python-test",
+        file: "AGENTS.md",
+        line: 1,
+        scriptName: "pytest",
+        sourceKind: "readme",
+      },
+      {
+        category: "test",
+        command: "poetry run pytest tests/",
+        commandKind: "python-test",
+        file: "AGENTS.md",
+        line: 2,
+        manager: "poetry",
+        scriptName: "pytest",
+        sourceKind: "readme",
+      },
+      {
+        category: "test",
+        command: "uv run --with pytest --with requests pytest -q tests/",
+        commandKind: "python-test",
+        file: "AGENTS.md",
+        line: 3,
+        manager: "uv",
+        scriptName: "pytest",
+        selfContained: true,
+        sourceKind: "readme",
+      },
+    ]);
+  });
+
+  test("extracts python lint commands", () => {
+    const pythonLintContent = [
+      "Run `ruff check .` before changes.",
+      "Run `poetry run ruff check src tests` for the packaged environment.",
+      "Run `uv run --with ruff ruff check .` for ephemeral checks.",
+    ].join("\n");
+
+    expect(extractCommands("AGENTS.md", pythonLintContent)).toEqual([
+      {
+        category: "lint",
+        command: "ruff check .",
+        commandKind: "python-lint",
+        file: "AGENTS.md",
+        line: 1,
+        scriptName: "ruff",
+        sourceKind: "readme",
+      },
+      {
+        category: "lint",
+        command: "poetry run ruff check src tests",
+        commandKind: "python-lint",
+        file: "AGENTS.md",
+        line: 2,
+        manager: "poetry",
+        scriptName: "ruff",
+        sourceKind: "readme",
+      },
+      {
+        category: "lint",
+        command: "uv run --with ruff ruff check .",
+        commandKind: "python-lint",
+        file: "AGENTS.md",
+        line: 3,
+        manager: "uv",
+        scriptName: "ruff",
+        selfContained: true,
         sourceKind: "readme",
       },
     ]);
@@ -285,6 +373,41 @@ describe("markdown extraction", () => {
         file: "AGENTS.md",
         line: 5,
         evidence: "npm run build",
+        source: "instruction",
+        sourceKind: "readme",
+      },
+    ]);
+  });
+
+  test("extracts python package manager hints", () => {
+    const pythonContent = [
+      "Use uv for local workflows.",
+      "For packaged releases, prefer poetry.",
+      "If you need a manual environment, install with pip.",
+    ].join("\n");
+
+    expect(extractPackageManagers("AGENTS.md", pythonContent)).toEqual([
+      {
+        manager: "uv",
+        file: "AGENTS.md",
+        line: 1,
+        evidence: "Use uv",
+        source: "instruction",
+        sourceKind: "readme",
+      },
+      {
+        manager: "poetry",
+        file: "AGENTS.md",
+        line: 2,
+        evidence: "prefer poetry",
+        source: "instruction",
+        sourceKind: "readme",
+      },
+      {
+        manager: "pip",
+        file: "AGENTS.md",
+        line: 3,
+        evidence: "install with pip",
         source: "instruction",
         sourceKind: "readme",
       },

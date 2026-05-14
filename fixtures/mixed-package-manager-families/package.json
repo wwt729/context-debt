@@ -1,0 +1,7 @@
+{
+  "name": "mixed-package-manager-families",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "test": "echo ok"
+  }
+}

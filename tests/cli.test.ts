@@ -73,7 +73,7 @@ describe("runCli", () => {
           explanation:
             "Different files or project metadata recommend different package managers for the same repository.",
           recommendation:
-            "Choose one package manager and align AI instructions, lockfiles, and package.json packageManager.",
+            "Choose one package manager and align AI instructions, lockfiles, and project metadata.",
           sourceKind: "project-meta",
           confidence: 0.95,
           confidenceLabel: "high",
@@ -192,6 +192,38 @@ describe("runCli", () => {
     expect(result.stdout).toContain("Scan roots: packages/app");
     expect(result.stdout).toContain("packages/app/AGENTS.md");
     expect(result.stdout).not.toContain("Discovered paths: AGENTS.md");
+  });
+
+  test("doctor accepts repeated --root flags as explicit scan boundaries", async () => {
+    const result = await runCliWithOutput([
+      "doctor",
+      fixturePath("scoped-discovery"),
+      "--config",
+      "missing-config.json",
+      "--root",
+      "packages/app",
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("Scan roots: packages/app");
+    expect(result.stdout).toContain("packages/app/AGENTS.md");
+    expect(result.stdout).not.toContain("docs/root-only.md");
+  });
+
+  test("scan respects --root without requiring config roots", async () => {
+    const result = await runCliWithOutput([
+      "scan",
+      fixturePath("scoped-discovery"),
+      "--config",
+      "missing-config.json",
+      "--root",
+      "packages/app",
+      "--no-color",
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout).toContain("Summary: 0 HIGH, 0 MEDIUM, 0 LOW, 0 INFO");
   });
 });
 

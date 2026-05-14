@@ -6,6 +6,7 @@ import { describe, expect, test } from "vitest";
 import {
   getDefaultConfig,
   loadConfig,
+  mergeScanConfig,
   resolveRuleSeverity,
 } from "../src/core/config.js";
 import { createTempDir } from "./helpers.js";
@@ -177,6 +178,30 @@ describe("config", () => {
 
     const config = loadConfig(dir, "custom.json");
     expect(config.scan.roots).toEqual(["packages/app", "tools/docs"]);
+  });
+
+  test("cli scan roots override configured roots", () => {
+    const merged = mergeScanConfig(
+      {
+        ...getDefaultConfig(),
+        scan: {
+          include: ["docs/**/*.md"],
+          exclude: ["node_modules"],
+          roots: ["packages/app"],
+        },
+      },
+      {
+        include: [".cursor/**/*.mdc"],
+        exclude: ["coverage"],
+        roots: ["tools/docs"],
+      },
+    );
+
+    expect(merged.scan).toEqual({
+      include: ["docs/**/*.md", ".cursor/**/*.mdc"],
+      exclude: ["node_modules", "coverage"],
+      roots: ["tools/docs"],
+    });
   });
 
   test("maps rule levels to stable effective severities", () => {

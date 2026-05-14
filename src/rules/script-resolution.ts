@@ -12,7 +12,7 @@ export function hasMatchingScript(
   context: ScanContext,
   command: ExtractedCommand,
 ): boolean {
-  const rootPackageJson = context.packageJson;
+  const rootPackageJson = context.tooling.packageJsonByDirectory.get(".");
   if (rootPackageJson?.scripts[command.scriptName]) {
     return true;
   }
@@ -27,15 +27,11 @@ function resolveCommandPackageJsons(
   command: ExtractedCommand,
 ): ParsedPackageJson[] {
   const directoryHints = collectDirectoryHints(context, command);
-  if (directoryHints.length === 0) {
-    return [];
-  }
 
-  return context.packageJsons.filter((packageJson) =>
-    directoryHints.some(
-      (directory) => packageJson.path === `${directory}/package.json`,
-    ),
-  );
+  return directoryHints.flatMap((directory) => {
+    const packageJson = context.tooling.packageJsonByDirectory.get(directory);
+    return packageJson ? [packageJson] : [];
+  });
 }
 
 function collectDirectoryHints(
@@ -91,11 +87,7 @@ function addIfKnownPackageDir(
     return;
   }
 
-  if (
-    context.packageJsons.some(
-      (packageJson) => packageJson.path === `${candidate}/package.json`,
-    )
-  ) {
+  if (context.tooling.packageJsonByDirectory.has(candidate)) {
     hints.add(candidate);
   }
 }

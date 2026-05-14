@@ -7,6 +7,11 @@ import {
   discoverPaths,
   toAbsolutePath,
 } from "./discovery.js";
+import {
+  buildProjectTooling,
+  collectProjectMetaPackageManagers,
+  isSupportedPackageManager,
+} from "./project-tooling.js";
 import type {
   ContextDebtConfig,
   ContextFile,
@@ -45,7 +50,7 @@ export async function buildScanContext(
 
       if (relativePath === "package.json" && parsedPackageJson.packageManager) {
         const [manager] = parsedPackageJson.packageManager.split("@");
-        if (manager === "npm" || manager === "pnpm" || manager === "yarn") {
+        if (isSupportedPackageManager(manager)) {
           packageManagers.push({
             manager,
             file: relativePath,
@@ -77,36 +82,7 @@ export async function buildScanContext(
       );
     }
   }
-
-  if (discoveredPaths.has("pnpm-lock.yaml")) {
-    packageManagers.push({
-      manager: "pnpm",
-      file: "pnpm-lock.yaml",
-      evidence: "pnpm-lock.yaml",
-      source: "lockfile",
-      sourceKind: "project-meta",
-    });
-  }
-
-  if (discoveredPaths.has("package-lock.json")) {
-    packageManagers.push({
-      manager: "npm",
-      file: "package-lock.json",
-      evidence: "package-lock.json",
-      source: "lockfile",
-      sourceKind: "project-meta",
-    });
-  }
-
-  if (discoveredPaths.has("yarn.lock")) {
-    packageManagers.push({
-      manager: "yarn",
-      file: "yarn.lock",
-      evidence: "yarn.lock",
-      source: "lockfile",
-      sourceKind: "project-meta",
-    });
-  }
+  packageManagers.push(...collectProjectMetaPackageManagers(discoveredPaths));
 
   return {
     rootDir,
@@ -118,6 +94,7 @@ export async function buildScanContext(
     packageManagers,
     discoveredPaths,
     config,
+    tooling: buildProjectTooling(contextFiles, packageJsons, packageManagers),
   };
 }
 
