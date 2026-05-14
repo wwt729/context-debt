@@ -7,6 +7,9 @@ import type {
   PackageManagerName,
   ParsedPackageJson,
   ProjectToolingAnalysis,
+  PythonCommandCategory,
+  PythonCommandKind,
+  PythonToolName,
   ToolingFamily,
 } from "./types.js";
 
@@ -29,6 +32,29 @@ const lockfileManagers = [
 const supportedManagers = new Set<PackageManagerName>(
   Object.values(packageManagerFamilies).flat(),
 );
+
+const pythonToolDescriptors = [
+  {
+    category: "test",
+    commandKind: "python-test",
+    matchers: [
+      /\bpytest(?:[-_][a-z0-9]+)?\b/iu,
+      /\[tool\.pytest(?:\.ini_options)?\]/iu,
+    ],
+    tool: "pytest",
+  },
+  {
+    category: "lint",
+    commandKind: "python-lint",
+    matchers: [/\bruff\b/iu, /\[tool\.ruff(?:\.[a-z-]+)?\]/iu],
+    tool: "ruff",
+  },
+] as const satisfies ReadonlyArray<{
+  category: PythonCommandCategory;
+  commandKind: PythonCommandKind;
+  matchers: readonly RegExp[];
+  tool: PythonToolName;
+}>;
 
 export function isSupportedPackageManager(
   value: string,
@@ -74,8 +100,7 @@ export function buildProjectTooling(
     packageJsonByDirectory,
     packageManagersByName,
     packageManagerFamilies: buildFamilySummaries(packageManagersByName),
-    pythonTestTooling: detectPythonTestTooling(contextFiles),
-    pythonLintTooling: detectPythonLintTooling(contextFiles),
+    pythonTooling: buildPythonTooling(contextFiles),
   };
 }
 
@@ -107,51 +132,45 @@ function buildFamilySummaries(
   }));
 }
 
-function detectPythonTestTooling(
+function buildPythonTooling(
   contextFiles: ContextFile[],
-): ProjectToolingAnalysis["pythonTestTooling"] {
+): ProjectToolingAnalysis["pythonTooling"] {
+  return Object.fromEntries(
+    pythonToolDescriptors.map((descriptor) => [
+      descriptor.tool,
+      detectPythonTooling(contextFiles, descriptor),
+    ]),
+  ) as ProjectToolingAnalysis["pythonTooling"];
+}
+
+function detectPythonTooling(
+  contextFiles: ContextFile[],
+  descriptor: (typeof pythonToolDescriptors)[number],
+): ProjectToolingAnalysis["pythonTooling"][PythonToolName] {
   const evidenceFiles = contextFiles
-    .filter((file) => isPythonTestToolingFile(file.path))
-    .filter((file) => hasPytestSignal(file.content))
+    .filter((file) => isPythonToolingFile(file.path))
+    .filter((file) => hasPythonToolSignal(file.content, descriptor.matchers))
     .map((file) => file.path)
     .sort((left, right) => left.localeCompare(right));
 
   return {
+    category: descriptor.category,
+    commandKind: descriptor.commandKind,
     evidenceFiles,
-    hasPytest: evidenceFiles.length > 0,
+    present: evidenceFiles.length > 0,
+    tool: descriptor.tool,
   };
 }
 
-function detectPythonLintTooling(
-  contextFiles: ContextFile[],
-): ProjectToolingAnalysis["pythonLintTooling"] {
-  const evidenceFiles = contextFiles
-    .filter((file) => isPythonTestToolingFile(file.path))
-    .filter((file) => hasRuffSignal(file.content))
-    .map((file) => file.path)
-    .sort((left, right) => left.localeCompare(right));
-
-  return {
-    evidenceFiles,
-    hasRuff: evidenceFiles.length > 0,
-  };
-}
-
-function isPythonTestToolingFile(path: string): boolean {
+function isPythonToolingFile(path: string): boolean {
   return (
     path === "pyproject.toml" || path === "uv.lock" || path === "poetry.lock"
   );
 }
 
-function hasPytestSignal(content: string): boolean {
-  return (
-    /\bpytest(?:[-_][a-z0-9]+)?\b/iu.test(content) ||
-    /\[tool\.pytest(?:\.ini_options)?\]/iu.test(content)
-  );
-}
-
-function hasRuffSignal(content: string): boolean {
-  return (
-    /\bruff\b/iu.test(content) || /\[tool\.ruff(?:\.[a-z-]+)?\]/iu.test(content)
-  );
+function hasPythonToolSignal(
+  content: string,
+  matchers: readonly RegExp[],
+): boolean {
+  return matchers.some((matcher) => matcher.test(content));
 }

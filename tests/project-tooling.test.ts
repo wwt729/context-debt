@@ -132,13 +132,19 @@ describe("project tooling analysis", () => {
         ]),
       },
     ]);
-    expect(tooling.pythonTestTooling).toEqual({
+    expect(tooling.pythonTooling.pytest).toEqual({
+      category: "test",
+      commandKind: "python-test",
       evidenceFiles: ["pyproject.toml"],
-      hasPytest: true,
+      present: true,
+      tool: "pytest",
     });
-    expect(tooling.pythonLintTooling).toEqual({
+    expect(tooling.pythonTooling.ruff).toEqual({
+      category: "lint",
+      commandKind: "python-lint",
       evidenceFiles: ["pyproject.toml"],
-      hasRuff: true,
+      present: true,
+      tool: "ruff",
     });
   });
 });

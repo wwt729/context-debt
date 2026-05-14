@@ -47,6 +47,11 @@ export type PackageManagerName =
   | "poetry"
   | "pip";
 
+export type CommandCategory = "test" | "build" | "lint";
+export type PythonCommandCategory = "test" | "lint";
+export type PythonCommandKind = "python-test" | "python-lint";
+export type PythonToolName = "pytest" | "ruff";
+
 export type ParsedPackageJson = {
   path: string;
   scripts: Record<string, string>;
@@ -54,9 +59,9 @@ export type ParsedPackageJson = {
 };
 
 export type ExtractedCommand = {
-  category: "test" | "build" | "lint";
+  category: CommandCategory;
   command: string;
-  commandKind: "node-script" | "python-test" | "python-lint";
+  commandKind: "node-script" | PythonCommandKind;
   scriptName: string;
   manager?: PackageManagerName;
   file: string;
@@ -105,14 +110,16 @@ export type ProjectToolingAnalysis = {
   packageJsonByDirectory: Map<string, ParsedPackageJson>;
   packageManagersByName: Map<PackageManagerName, PackageManagerEvidence[]>;
   packageManagerFamilies: PackageManagerFamilySummary[];
-  pythonTestTooling: {
-    evidenceFiles: string[];
-    hasPytest: boolean;
-  };
-  pythonLintTooling: {
-    evidenceFiles: string[];
-    hasRuff: boolean;
-  };
+  pythonTooling: Record<
+    PythonToolName,
+    {
+      category: PythonCommandCategory;
+      commandKind: PythonCommandKind;
+      evidenceFiles: string[];
+      present: boolean;
+      tool: PythonToolName;
+    }
+  >;
 };
 
 export type ScanConfig = {
