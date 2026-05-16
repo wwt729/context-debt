@@ -32,7 +32,9 @@
   },
   "files": [
     "dist",
+    "docs",
     "README.md",
+    "README.zh-CN.md",
     "LICENSE",
     "CHANGELOG.md"
   ],

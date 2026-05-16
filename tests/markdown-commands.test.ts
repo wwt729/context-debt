@@ -51,6 +51,29 @@ describe("markdown command extraction heuristics", () => {
     ]);
   });
 
+  test("ignores commands in rule catalog tables", () => {
+    const content = [
+      "| Rule | Severity | What it checks |",
+      "| --- | --- | --- |",
+      "| `missing-python-test-command` | `HIGH` | AI docs reference a Python `pytest` command, but the repo has no matching local pytest tooling signal |",
+      "| `missing-python-lint-command` | `HIGH` | AI docs reference a Python `ruff check` command, but the repo has no matching local ruff tooling signal |",
+      "",
+      "Run `pytest -q` before changes.",
+    ].join("\n");
+
+    expect(extractCommands("README.md", content)).toEqual([
+      {
+        category: "test",
+        command: "pytest -q",
+        commandKind: "python-test",
+        file: "README.md",
+        line: 6,
+        scriptName: "pytest",
+        sourceKind: "readme",
+      },
+    ]);
+  });
+
   test("ignores structured command fields inside rule format blocks", () => {
     const content = [
       "## Rule Format",

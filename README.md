@@ -82,29 +82,15 @@ Typical workflow:
 
 ## What Gets Scanned
 
-`context-debt` currently scans project metadata and instruction-like files, including:
+`context-debt` currently scans project metadata and instruction-like files:
 
-- `AGENTS.md`
-- `CLAUDE.md`
-- Cursor rules under `.cursor/rules/`
-- Copilot instructions
-- Codex-related instruction files
-- Windsurf-related instruction files
+- AI context files such as `AGENTS.md`, `CLAUDE.md`, Cursor rules, Copilot instructions, Codex files, and Windsurf files
 - `README.md`
-- `package.json`
-- `pyproject.toml`
-- `poetry.lock`
-- `uv.lock`
-- MCP config files
+- Node metadata such as `package.json` and lockfiles
+- Python metadata such as `pyproject.toml`, `poetry.lock`, and `uv.lock`
+- MCP config files such as `.mcp.json`, `.cursor/mcp.json`, and `.claude/mcp.json`
 
-It does not try to "understand everything". It checks structured signals such as:
-
-- command references
-- local file/path references
-- package manager guidance
-- MCP capability hints and allowlists
-- duplicated or oversized instruction blocks
-- rule density and repeated negative rules
+It checks structured signals such as command references, local file/path references, package manager guidance, MCP capability hints, duplicated instruction blocks, and oversized context files.
 
 ## Commands
 
@@ -116,29 +102,16 @@ context-debt scan [path]
 
 Scan a repository and emit text or JSON results.
 
-Options:
+Common options:
 
-- `--json`: convenience flag for JSON output
-- `--format <text|json>`: explicit output format
+- `--json` or `--format json`: output machine-readable JSON
 - `--strict`: fail on `HIGH` and high-confidence `MEDIUM`
 - `--no-color`: disable ANSI color
-- `--verbose`: show explanation and extra issue metadata in text output
+- `--verbose`: show explanations and extra issue metadata
 - `--config <path>`: custom config file
 - `--max-issues <count>`: cap displayed issues while keeping full totals
 - `--root <path>`: limit discovery to a repo-relative root; repeat to scan multiple roots
-- `--include <glob>`: append include globs
-- `--exclude <glob>`: append exclude globs
-
-Examples:
-
-```bash
-context-debt scan .
-context-debt scan . --strict
-context-debt scan . --root packages/app
-context-debt scan . --verbose
-context-debt scan . --format json --max-issues 20
-context-debt scan . --config ./context-debt.config.json
-```
+- `--include <glob>` / `--exclude <glob>`: append discovery globs
 
 ### `doctor`
 
@@ -146,22 +119,7 @@ context-debt scan . --config ./context-debt.config.json
 context-debt doctor [path]
 ```
 
-Print discovery diagnostics for the repository:
-
-- config path
-- config status
-- effective include / exclude globs
-- configured rule overrides
-- package.json presence
-- discovered primary context files
-- detected MCP files
-- discovered paths
-- discovered file counts by kind
-
-Options:
-
-- `--root <path>`: limit discovery to a repo-relative root; repeat to override config roots
-- `--verbose`: include the current rule findings with explanations and resolved paths
+Print discovery diagnostics: config status, effective include/exclude globs, rule overrides, discovered context files, MCP files, package metadata, and file counts.
 
 ### `fix`
 
@@ -170,21 +128,11 @@ context-debt fix [path]
 context-debt fix [path] --write
 ```
 
-`fix` is intentionally conservative and only applies high-confidence edits.
-
-Current fixers:
+Preview or apply conservative high-confidence edits:
 
 - remove lines that reference missing local files
 - remove exact duplicate instruction units
 - generate `context-debt.compact.md` from canonical instruction blocks
-
-Options:
-
-- `--root <path>`: limit discovery to a repo-relative root; repeat to override config roots
-- `--config <path>`: custom config file
-- `--include <glob>`: append include globs
-- `--exclude <glob>`: append exclude globs
-- `--write`: apply edits instead of previewing
 
 ### `init`
 
@@ -199,43 +147,29 @@ Create a default `context-debt.config.json` in the current directory.
 ```text
 Context Debt Report
 
-HIGH (2)
+HIGH (1)
   missing-test-script - Referenced test command has no matching script
     File: CLAUDE.md:3
     Confidence: high (0.98)
     Evidence: pnpm test was referenced, but package.json has no "test" script.
     Recommendation: Add scripts.test to package.json or update the instruction to the correct test command.
+
+MEDIUM (1)
   referenced-file-missing - Referenced local file does not exist
     File: AGENTS.md:7
-    Confidence: high (0.99)
+    Confidence: medium (0.78)
     Evidence: docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.
     Recommendation: Create the referenced file or update the instruction to point at an existing path.
 
-MEDIUM (1)
-  stale-reference - Referenced file path appears stale after a rename
-    File: README.md:12
-    Confidence: high (0.90)
-    Evidence: docs/legacy-ci.md was referenced, but docs/ci.md exists instead.
-    Recommendation: Update the instruction to the current path so agents follow the right file.
-
-LOW (1)
-  token-waste - Repeated long instruction blocks waste context budget
-    File: AGENTS.md
-    Confidence: medium (0.82)
-    Evidence: 91 duplicated words were repeated across AGENTS.md and CLAUDE.md.
-    Recommendation: Keep one canonical instruction block and reference it from the other files.
-
-Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
+Summary: 1 HIGH, 1 MEDIUM, 0 LOW, 0 INFO
 ```
 
-Interpretation:
+Severity meaning:
 
 - `HIGH`: likely broken or risky guidance
 - `MEDIUM`: conflicting, stale, or oversized context
 - `LOW`: signal-quality or token-efficiency problems
 - `INFO`: informational findings
-
-Use `context-debt scan . --verbose` to include rule explanations and extra metadata such as resolved paths or related files.
 
 ## JSON Example
 
@@ -244,16 +178,16 @@ Use `context-debt scan . --verbose` to include rule explanations and extra metad
   "schemaVersion": "1.1",
   "tool": "context-debt",
   "version": "0.1.0",
-  "displayedIssues": 2,
+  "displayedIssues": 1,
   "scannedPath": ".",
   "summary": {
-    "HIGH": 2,
-    "MEDIUM": 1,
-    "LOW": 1,
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 0,
     "INFO": 0
   },
-  "strictFailureCount": 1,
-  "totalIssues": 4,
+  "strictFailureCount": 0,
+  "totalIssues": 1,
   "issues": [
     {
       "id": "missing-test-script",
@@ -267,41 +201,14 @@ Use `context-debt scan . --verbose` to include rule explanations and extra metad
       "recommendation": "Add scripts.test to package.json or update the instruction to the correct test command.",
       "sourceKind": "claude",
       "confidence": 0.98,
-      "autofixAvailable": true,
-      "confidenceLabel": "high"
-    },
-    {
-      "id": "referenced-file-missing",
-      "ruleId": "referenced-file-missing",
-      "title": "Referenced local file does not exist",
-      "severity": "MEDIUM",
-      "file": "AGENTS.md",
-      "line": 7,
-      "evidence": "docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.",
-      "explanation": "AI instructions refer to a local file or path that is not present in the repository.",
-      "recommendation": "Create the referenced file or update the instruction to point at an existing path.",
-      "sourceKind": "agents",
-      "confidence": 0.78,
-      "autofixAvailable": true,
-      "confidenceLabel": "medium",
-      "resolvedPath": "docs/release-playbook.md"
+      "confidenceLabel": "high",
+      "autofixAvailable": true
     }
   ]
 }
 ```
 
-Useful fields:
-
-- `summary`: total issue counts by severity
-- `displayedIssues` vs `totalIssues`: affected by `--max-issues`
-- `schemaVersion`: stable JSON report schema version
-- `strictFailureCount`: how many issues would fail `--strict`
-- `confidence`: rule confidence score
-- `confidenceLabel`: stable confidence tier used by `--strict`
-- `autofixAvailable`: whether `context-debt fix` can propose a rule-owned edit
-- `sourceKind`: where the issue originated
-- `resolvedPath`: normalized resolved path when available
-- `relatedFiles`: additional files involved in a multi-file finding
+Useful JSON fields include `summary`, `displayedIssues`, `totalIssues`, `strictFailureCount`, `confidence`, `confidenceLabel`, `autofixAvailable`, `sourceKind`, `resolvedPath`, and `relatedFiles`.
 
 ## Configuration
 
@@ -315,9 +222,6 @@ Create `context-debt.config.json`:
     },
     "repeated-negative-rules": {
       "level": "warn"
-    },
-    "too-many-global-rules": {
-      "severity": "INFO"
     }
   },
   "rules": {
@@ -340,91 +244,32 @@ Create `context-debt.config.json`:
 }
 ```
 
-Configuration reference:
+Full configuration and MCP guidance live in [docs/rules.md](docs/rules.md).
 
-| Key | Meaning |
-| --- | --- |
-| `ruleSettings.<rule-id>.enabled` | Disable a rule completely |
-| `ruleSettings.<rule-id>.level` | Stable alias: `off`, `warn`, or `error` |
-| `ruleSettings.<rule-id>.severity` | Override rule severity |
-| `rules.referencedFileMissing.ignorePaths` | Exact raw or repo-relative paths to ignore |
-| `rules.referencedFileMissing.ignoreGlobs` | Repo-relative glob patterns to ignore |
-| `rules.referencedFileMissing.ignorePatterns` | Regex-based ignore patterns |
-| `scan.include` | Additional include globs |
-| `scan.exclude` | Additional exclude globs |
-| `scan.roots` | Limit discovery to specific repo-relative roots; overridden by CLI `--root` |
-| `thresholds.duplicateInstructionSimilarity` | Similarity threshold for `duplicate-instructions` |
-| `thresholds.oversizedContextChars` | Character limit for `oversized-context-file` |
-| `thresholds.tokenWasteMinWords` | Minimum duplicated words before `token-waste` fires |
+## Rule List
 
-Rule level semantics:
+Current rules:
 
-- `off`: disable the rule
-- `warn`: force findings from that rule to `LOW`
-- `error`: force findings from that rule to `HIGH`
-- `severity`: explicit severity override, which takes precedence over `level`
+- `missing-ai-context`
+- `missing-test-script`
+- `missing-python-test-command`
+- `missing-python-lint-command`
+- `missing-build-script`
+- `missing-lint-script`
+- `conflicting-package-manager`
+- `dangerous-mcp-permission`
+- `referenced-file-missing`
+- `contradictory-build-command`
+- `contradictory-lint-command`
+- `contradictory-test-command`
+- `stale-reference`
+- `oversized-context-file`
+- `duplicate-instructions`
+- `too-many-global-rules`
+- `token-waste`
+- `repeated-negative-rules`
 
-## Rules
-
-| Rule | Severity | What it checks |
-| --- | --- | --- |
-| `missing-test-script` | `HIGH` | AI docs reference a test command missing from `package.json` |
-| `missing-python-test-command` | `HIGH` | AI docs reference a Python `pytest` command, but the repo has no matching local pytest tooling signal |
-| `missing-python-lint-command` | `HIGH` | AI docs reference a Python `ruff` command, but the repo has no matching local ruff tooling signal |
-| `missing-build-script` | `HIGH` | AI docs reference a build command missing from `package.json` |
-| `missing-lint-script` | `HIGH` | AI docs reference a lint command missing from `package.json` |
-| `conflicting-package-manager` | `HIGH` | Instructions, lockfiles, and metadata disagree on package manager choice across npm/pnpm/yarn/uv/poetry/pip |
-| `dangerous-mcp-permission` | `HIGH` | MCP servers imply broad capability without enough scoping |
-| `referenced-file-missing` | `HIGH` / `MEDIUM` | AI docs point to missing local files, with severity based on confidence |
-| `contradictory-build-command` | `MEDIUM` | Different files recommend conflicting build commands |
-| `contradictory-lint-command` | `MEDIUM` | Different files recommend conflicting lint commands |
-| `contradictory-test-command` | `MEDIUM` | Different files recommend conflicting test commands |
-| `stale-reference` | `MEDIUM` | A deprecated-looking path is missing and a likely replacement path exists |
-| `oversized-context-file` | `MEDIUM` | A context file is too large for efficient prompt use |
-| `duplicate-instructions` | `MEDIUM` | Instruction blocks overlap heavily across files, with repeated-section samples and a canonical file suggestion |
-| `too-many-global-rules` | `MEDIUM` | One global file carries too much policy |
-| `token-waste` | `LOW` | Long duplicated text wastes prompt budget, with estimated wasted tokens and top duplicate sources |
-| `repeated-negative-rules` | `LOW` | Repeated “do not” rules lower signal quality |
-| `missing-ai-context` | `LOW` | The repo has no primary AI context file |
-
-## MCP Scanning Example
-
-`context-debt` scans these MCP config locations by default:
-
-- `.mcp.json`
-- `mcp.json`
-- `.vscode/mcp.json`
-- `.cursor/mcp.json`
-- `.claude/mcp.json`
-
-Example risky config:
-
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
-      "roots": ["/"]
-    }
-  }
-}
-```
-
-Run:
-
-```bash
-context-debt scan . --format json
-```
-
-Typical outcome:
-
-- `dangerous-mcp-permission` when a server implies broad filesystem, command, or network scope without a clear allowlist or explanation
-
-Safer MCP configs usually include both:
-
-- a human-readable `description` or rationale
-- a narrow allowlist such as `roots`, `allowedPaths`, `allowedCommands`, or `allowedDomains`
+See [docs/rules.md](docs/rules.md) for severity, trigger details, configuration keys, and MCP examples.
 
 ## CI Example
 
@@ -448,12 +293,7 @@ Meaning:
 - fail CI on high-confidence `MEDIUM` when `--strict` is enabled
 - allow `LOW` and `INFO` to pass by default
 
-This repository also includes a full workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) covering:
-
-- `lint`
-- `test` on Node 20 and 22
-- `build`
-- macOS/Linux package smoke tests
+This repository also includes a full workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) covering lint, tests on Node 20 and 22, build, and package smoke tests.
 
 ## Package Smoke Test
 
@@ -464,12 +304,7 @@ pnpm build
 pnpm smoke:package
 ```
 
-The smoke script:
-
-- runs `pnpm pack`
-- extracts the tarball and checks packaged files
-- runs the packed CLI on a clean fixture
-- verifies CLI path behavior from a separate working directory
+The smoke script packs the CLI, checks packaged files, runs the packed binary on a clean fixture, and verifies CLI path behavior from a separate working directory.
 
 ## Exit Codes
 

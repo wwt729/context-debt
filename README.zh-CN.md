@@ -82,29 +82,15 @@ context-debt fix . --write
 
 ## 扫描对象
 
-`context-debt` 当前会扫描项目元数据和指令类文件，包括：
+`context-debt` 当前会扫描项目元数据和指令类文件：
 
-- `AGENTS.md`
-- `CLAUDE.md`
-- `.cursor/rules/` 下的 Cursor rules
-- Copilot 指令文件
-- Codex 相关指令文件
-- Windsurf 相关指令文件
+- `AGENTS.md`、`CLAUDE.md`、Cursor rules、Copilot 指令、Codex 文件、Windsurf 文件
 - `README.md`
-- `package.json`
-- `pyproject.toml`
-- `poetry.lock`
-- `uv.lock`
-- MCP 配置文件
+- `package.json` 和 Node 锁文件
+- `pyproject.toml`、`poetry.lock`、`uv.lock`
+- `.mcp.json`、`.cursor/mcp.json`、`.claude/mcp.json` 等 MCP 配置
 
-它不是做“全文语义理解”，而是围绕这些结构化信号做检测：
-
-- command references
-- local file/path references
-- package manager guidance
-- MCP capability hints and allowlists
-- duplicated or oversized instruction blocks
-- rule density and repeated negative rules
+它围绕命令引用、本地路径引用、包管理器指引、MCP 能力提示、重复指令块和过大上下文文件等结构化信号做检测。
 
 ## 命令说明
 
@@ -116,29 +102,16 @@ context-debt scan [path]
 
 扫描指定仓库，并输出文本或 JSON 结果。
 
-选项：
+常用选项：
 
-- `--json`：便捷 JSON 输出开关
-- `--format <text|json>`：显式指定输出格式
+- `--json` 或 `--format json`：输出机器可读 JSON
 - `--strict`：将 `HIGH` 和高置信度 `MEDIUM` 视为失败
 - `--no-color`：关闭彩色输出
-- `--verbose`：在文本输出中显示 explanation 和额外问题元数据
+- `--verbose`：显示 explanation 和额外问题元数据
 - `--config <path>`：指定自定义配置文件
 - `--max-issues <count>`：限制显示的问题数量，但保留完整汇总
 - `--root <path>`：将扫描范围限制到仓库相对根目录，可重复传入多个
-- `--include <glob>`：追加 include glob
-- `--exclude <glob>`：追加 exclude glob
-
-示例：
-
-```bash
-context-debt scan .
-context-debt scan . --strict
-context-debt scan . --root packages/app
-context-debt scan . --verbose
-context-debt scan . --format json --max-issues 20
-context-debt scan . --config ./context-debt.config.json
-```
+- `--include <glob>` / `--exclude <glob>`：追加发现范围 glob
 
 ### `doctor`
 
@@ -146,28 +119,7 @@ context-debt scan . --config ./context-debt.config.json
 context-debt doctor [path]
 ```
 
-输出仓库扫描发现与配置诊断信息：
-
-- config path
-- config status
-- 实际生效的 include / exclude globs
-- 已配置的规则覆盖项
-- package.json presence
-- discovered primary context files
-- detected MCP files
-- discovered paths
-- discovered file counts by kind
-
-选项：
-
-- `--root <path>`：将扫描范围限制到仓库相对根目录；重复传入时会覆盖配置文件中的 roots
-- `--verbose`：附带输出当前规则命中结果、explanation 和 resolved path
-
-适合排查：
-
-- 为什么某个文件没有被扫描到
-- 为什么自定义配置没生效
-- MCP 文件是否被正确发现
+输出发现诊断：配置状态、实际 include/exclude、规则覆盖项、发现到的上下文文件、MCP 文件、项目元数据和文件类型统计。
 
 ### `fix`
 
@@ -176,21 +128,11 @@ context-debt fix [path]
 context-debt fix [path] --write
 ```
 
-`fix` 的原则是保守，只做高置信度修复。
+预览或应用保守的高置信度修复：
 
-当前支持：
-
-- 删除引用缺失文件的行
-- 删除完全重复的指令块
-- 生成聚合版 `context-debt.compact.md`
-
-选项：
-
-- `--root <path>`：将扫描范围限制到仓库相对根目录；重复传入时会覆盖配置文件中的 roots
-- `--config <path>`：指定自定义配置文件
-- `--include <glob>`：追加 include glob
-- `--exclude <glob>`：追加 exclude glob
-- `--write`：直接写入修复结果
+- 删除引用缺失本地文件的行
+- 删除完全重复的指令单元
+- 从规范指令块生成 `context-debt.compact.md`
 
 ### `init`
 
@@ -205,33 +147,21 @@ context-debt init
 ```text
 Context Debt Report
 
-HIGH (2)
+HIGH (1)
   missing-test-script - Referenced test command has no matching script
     File: CLAUDE.md:3
     Confidence: high (0.98)
     Evidence: pnpm test was referenced, but package.json has no "test" script.
     Recommendation: Add scripts.test to package.json or update the instruction to the correct test command.
+
+MEDIUM (1)
   referenced-file-missing - Referenced local file does not exist
     File: AGENTS.md:7
-    Confidence: high (0.99)
+    Confidence: medium (0.78)
     Evidence: docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.
     Recommendation: Create the referenced file or update the instruction to point at an existing path.
 
-MEDIUM (1)
-  stale-reference - Referenced file path appears stale after a rename
-    File: README.md:12
-    Confidence: high (0.90)
-    Evidence: docs/legacy-ci.md was referenced, but docs/ci.md exists instead.
-    Recommendation: Update the instruction to the current path so agents follow the right file.
-
-LOW (1)
-  token-waste - Repeated long instruction blocks waste context budget
-    File: AGENTS.md
-    Confidence: medium (0.82)
-    Evidence: 91 duplicated words were repeated across AGENTS.md and CLAUDE.md.
-    Recommendation: Keep one canonical instruction block and reference it from the other files.
-
-Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
+Summary: 1 HIGH, 1 MEDIUM, 0 LOW, 0 INFO
 ```
 
 严重级别解释：
@@ -241,8 +171,6 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 - `LOW`：信息质量或 token 效率问题
 - `INFO`：信息性提示
 
-使用 `context-debt scan . --verbose` 可以在文本输出里额外看到规则 explanation，以及 resolved path、related files 等元数据。
-
 ## JSON 输出示例
 
 ```json
@@ -250,16 +178,16 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
   "schemaVersion": "1.1",
   "tool": "context-debt",
   "version": "0.1.0",
-  "displayedIssues": 2,
+  "displayedIssues": 1,
   "scannedPath": ".",
   "summary": {
-    "HIGH": 2,
-    "MEDIUM": 1,
-    "LOW": 1,
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 0,
     "INFO": 0
   },
-  "strictFailureCount": 1,
-  "totalIssues": 4,
+  "strictFailureCount": 0,
+  "totalIssues": 1,
   "issues": [
     {
       "id": "missing-test-script",
@@ -273,41 +201,14 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
       "recommendation": "Add scripts.test to package.json or update the instruction to the correct test command.",
       "sourceKind": "claude",
       "confidence": 0.98,
-      "autofixAvailable": true,
-      "confidenceLabel": "high"
-    },
-    {
-      "id": "referenced-file-missing",
-      "ruleId": "referenced-file-missing",
-      "title": "Referenced local file does not exist",
-      "severity": "MEDIUM",
-      "file": "AGENTS.md",
-      "line": 7,
-      "evidence": "docs/release-playbook.md was referenced, but /repo/docs/release-playbook.md does not exist.",
-      "explanation": "AI instructions refer to a local file or path that is not present in the repository.",
-      "recommendation": "Create the referenced file or update the instruction to point at an existing path.",
-      "sourceKind": "agents",
-      "confidence": 0.78,
-      "autofixAvailable": true,
-      "confidenceLabel": "medium",
-      "resolvedPath": "docs/release-playbook.md"
+      "confidenceLabel": "high",
+      "autofixAvailable": true
     }
   ]
 }
 ```
 
-关键字段：
-
-- `summary`：各级别问题汇总
-- `displayedIssues` 与 `totalIssues`：可能受 `--max-issues` 影响
-- `schemaVersion`：稳定的 JSON 报告 schema 版本
-- `strictFailureCount`：开启 `--strict` 时会失败的问题数量
-- `confidence`：规则命中置信度
-- `confidenceLabel`：供 `--strict` 使用的稳定置信度分层
-- `autofixAvailable`：`context-debt fix` 是否能给出该规则的修复建议
-- `sourceKind`：问题来源文件类型
-- `resolvedPath`：归一化后的解析路径
-- `relatedFiles`：多文件问题涉及的其它文件
+常用 JSON 字段包括 `summary`、`displayedIssues`、`totalIssues`、`strictFailureCount`、`confidence`、`confidenceLabel`、`autofixAvailable`、`sourceKind`、`resolvedPath` 和 `relatedFiles`。
 
 ## 配置
 
@@ -321,9 +222,6 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
     },
     "repeated-negative-rules": {
       "level": "warn"
-    },
-    "too-many-global-rules": {
-      "severity": "INFO"
     }
   },
   "rules": {
@@ -346,93 +244,34 @@ Summary: 2 HIGH, 1 MEDIUM, 1 LOW, 0 INFO
 }
 ```
 
-配置说明：
-
-| Key | 中文说明 |
-| --- | --- |
-| `ruleSettings.<rule-id>.enabled` | 完全关闭某条规则 |
-| `ruleSettings.<rule-id>.level` | 稳定别名：`off`、`warn`、`error` |
-| `ruleSettings.<rule-id>.severity` | 覆盖规则默认严重级别 |
-| `rules.referencedFileMissing.ignorePaths` | 忽略精确路径 |
-| `rules.referencedFileMissing.ignoreGlobs` | 忽略 glob 模式 |
-| `rules.referencedFileMissing.ignorePatterns` | 忽略正则模式 |
-| `scan.include` | 追加扫描包含模式 |
-| `scan.exclude` | 追加扫描排除模式 |
-| `scan.roots` | 将扫描范围限制在特定仓库相对根目录下；若传入 CLI `--root`，则以 CLI 为准 |
-| `thresholds.duplicateInstructionSimilarity` | 重复指令相似度阈值 |
-| `thresholds.oversizedContextChars` | 上下文文件过大阈值 |
-| `thresholds.tokenWasteMinWords` | token 浪费最小重复词数 |
-
-`level` 语义：
-
-- `off`：关闭该规则
-- `warn`：将该规则的结果统一降为 `LOW`
-- `error`：将该规则的结果统一提升为 `HIGH`
-- `severity`：显式严重级别覆盖，优先级高于 `level`
+完整配置和 MCP 说明见 [docs/rules.zh-CN.md](docs/rules.zh-CN.md)。
 
 ## 规则列表
 
-| Rule | Severity | 中文说明 |
-| --- | --- | --- |
-| `missing-test-script` | `HIGH` | AI 文档引用了 `package.json` 中不存在的测试脚本 |
-| `missing-python-test-command` | `HIGH` | AI 文档引用了 Python `pytest` 测试命令，但仓库里没有对应的本地 pytest 工具信号 |
-| `missing-python-lint-command` | `HIGH` | AI 文档引用了 Python `ruff` 检查命令，但仓库里没有对应的本地 ruff 工具信号 |
-| `missing-build-script` | `HIGH` | AI 文档引用了不存在的构建脚本 |
-| `missing-lint-script` | `HIGH` | AI 文档引用了不存在的 lint 脚本 |
-| `conflicting-package-manager` | `HIGH` | 指令、锁文件与元数据在 npm/pnpm/yarn/uv/poetry/pip 等包管理器选择上给出冲突信息 |
-| `dangerous-mcp-permission` | `HIGH` | MCP 服务权限过宽且缺少足够范围限制 |
-| `referenced-file-missing` | `HIGH` / `MEDIUM` | AI 文档引用了不存在的本地文件，严重级别取决于置信度 |
-| `contradictory-build-command` | `MEDIUM` | 不同文件推荐了互相冲突的构建命令 |
-| `contradictory-lint-command` | `MEDIUM` | 不同文件推荐了互相冲突的 lint 命令 |
-| `contradictory-test-command` | `MEDIUM` | 不同文件推荐了互相冲突的测试命令 |
-| `stale-reference` | `MEDIUM` | 已废弃风格的路径不存在，且仓库里找到了可能的替代路径 |
-| `oversized-context-file` | `MEDIUM` | 单个上下文文件过大，不适合高效提示 |
-| `duplicate-instructions` | `MEDIUM` | 多个文件存在高重叠指令块，并给出重复片段摘要与建议保留位置 |
-| `too-many-global-rules` | `MEDIUM` | 全局规则文件承担了过多策略 |
-| `token-waste` | `LOW` | 长段重复文本浪费上下文预算，并给出估算 token 浪费与主要重复来源 |
-| `repeated-negative-rules` | `LOW` | 重复的否定规则拉低信息密度 |
-| `missing-ai-context` | `LOW` | 仓库缺少主 AI 上下文文件 |
+当前规则：
 
-## MCP 扫描示例
+- `missing-ai-context`
+- `missing-test-script`
+- `missing-python-test-command`
+- `missing-python-lint-command`
+- `missing-build-script`
+- `missing-lint-script`
+- `conflicting-package-manager`
+- `dangerous-mcp-permission`
+- `referenced-file-missing`
+- `contradictory-build-command`
+- `contradictory-lint-command`
+- `contradictory-test-command`
+- `stale-reference`
+- `oversized-context-file`
+- `duplicate-instructions`
+- `too-many-global-rules`
+- `token-waste`
+- `repeated-negative-rules`
 
-`context-debt` 默认扫描这些 MCP 配置位置：
+规则严重级别、触发条件、配置键和 MCP 示例见 [docs/rules.zh-CN.md](docs/rules.zh-CN.md)。
 
-- `.mcp.json`
-- `mcp.json`
-- `.vscode/mcp.json`
-- `.cursor/mcp.json`
-- `.claude/mcp.json`
-
-风险示例：
-
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
-      "roots": ["/"]
-    }
-  }
-}
-```
-
-运行：
-
-```bash
-context-debt scan . --format json
-```
-
-典型结果：
-
-- 当服务暗示了较宽的文件系统、命令或网络访问范围，但没有明确 allowlist 或说明时，会触发 `dangerous-mcp-permission`
-
-更安全的 MCP 配置通常同时具备：
-
-- 可读的用途说明
-- 较窄的路径、命令或域名白名单
-
-## CI 集成示例
+## CI 示例
 
 最小 GitHub Actions 步骤：
 
@@ -450,59 +289,49 @@ context-debt scan . --format json
 
 含义：
 
-- `HIGH` 直接让 CI 失败
-- `--strict` 下高置信度 `MEDIUM` 也会失败
-- 默认允许 `LOW` 和 `INFO` 通过
+- `HIGH` 会让 CI 失败
+- `--strict` 下，高置信度 `MEDIUM` 也会失败
+- `LOW` 和 `INFO` 默认不阻塞
 
-当前仓库还提供了完整工作流 [.github/workflows/ci.yml](.github/workflows/ci.yml)，包含：
+本仓库也包含完整 workflow：[.github/workflows/ci.yml](.github/workflows/ci.yml)，覆盖 lint、Node 20/22 测试、build 和 package smoke test。
 
-- `lint`
-- Node 20 / 22 上的 `test`
-- `build`
-- macOS / Linux package smoke tests
+## Package Smoke Test
 
-## 打包冒烟测试
-
-发布校验应该测试真实打包产物，而不是只测试本地源码目录。
+发布校验应测试真实打包产物，而不只是本地源码树。
 
 ```bash
 pnpm build
 pnpm smoke:package
 ```
 
-这个 smoke 脚本会：
+smoke 脚本会打包 CLI、检查包内容、在 clean fixture 上运行打包后的二进制，并从另一个工作目录验证 CLI 路径行为。
 
-- 执行 `pnpm pack`
-- 解压 tarball 并检查打包文件
-- 用打包后的 CLI 跑干净 fixture
-- 从不同工作目录验证 CLI 路径行为
+## Exit Codes
 
-## 退出码
-
-- `0`：只有 `LOW` / `INFO`，或者无问题
+- `0`：没有问题，或只有 `LOW` / `INFO`
 - `1`：存在 `HIGH`，或 `--strict` 下存在高置信度 `MEDIUM`
-- `2`：运行时错误或配置错误
+- `2`：运行时或配置错误
 
-## 适用场景
+## 使用场景
 
-当你希望做到这些时，可以用 `context-debt`：
+适合在这些情况下使用 `context-debt`：
 
 - 保持 `AGENTS.md` 和 `CLAUDE.md` 一致
-- 在 agent 浪费时间之前抓出失效路径
-- 统一文档中的包管理器指引
-- 管控仓库内 MCP 配置风险
-- 减少多工具间重复指令块
-- 把 AI 上下文检查稳定接入 CI
+- 在 agent 浪费时间前发现失效路径
+- 统一文档里的包管理器指引
+- 控制仓库内 MCP 配置风险
+- 减少跨工具重复指令块
+- 把 AI 上下文检查纳入 CI
 
-## 路线图
+## Roadmap
 
-- 提供更多 autofixer，而不止是精确重复和缺失引用清理
-- 补充更丰富的规则文档与示例
-- 增加更多真实仓库回归 fixture，持续校准误报
+- 增加更多 autofix 能力
+- 补充更完整的规则级文档与示例
+- 增加真实仓库回归 fixture，持续校准误报
 
-真实仓库 regression 覆盖现在会在 CI 中校验。每条已发布规则都必须被第三方 regression triage 覆盖；如果暂时还没有真实 fixture，就必须在 `regressions/manifest.json` 里显式登记 coverage gap 和原因。
+真实仓库回归覆盖会在 CI 中验证。每条已发布规则都必须有第三方回归 triage 覆盖，或者在 `regressions/manifest.json` 中明确记录覆盖缺口原因。
 
-## 发布说明
+## Release Notes
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/releasing.md](docs/releasing.md)

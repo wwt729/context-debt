@@ -1,3 +1,5 @@
+import { isNonActionableCommandTableReference } from "./markdown-tables.js";
+
 const actionVerbPattern =
   /\b(?:read|open|see|check|review|use|edit|inspect|follow|update|create|compare|load|visit)\b/iu;
 const catalogLeadInPattern =
@@ -22,6 +24,10 @@ export function shouldIgnoreCommandReference(
   }
 
   if (isInsideContextFence(content, index)) {
+    return true;
+  }
+
+  if (isNonActionableCommandTableReference(content, index)) {
     return true;
   }
 

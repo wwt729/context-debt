@@ -1,7 +1,14 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
   "files": {
-    "includes": ["**", "!dist", "!node_modules", "!regressions/repos"]
+    "includes": [
+      "**",
+      "!*.tgz",
+      "!.tmp-smoke",
+      "!dist",
+      "!node_modules",
+      "!regressions/repos"
+    ]
   },
   "formatter": {
     "enabled": true,

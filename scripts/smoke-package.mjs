@@ -49,7 +49,10 @@ function runSmoke(tempRoot) {
   assert.ok(existsSync(join(packageDir, "dist", "cli.js")));
   assert.ok(existsSync(join(packageDir, "dist", "index.d.ts")));
   assert.ok(existsSync(join(packageDir, "README.md")));
+  assert.ok(existsSync(join(packageDir, "README.zh-CN.md")));
   assert.ok(existsSync(join(packageDir, "CHANGELOG.md")));
+  assert.ok(existsSync(join(packageDir, "docs", "rules.md")));
+  assert.ok(existsSync(join(packageDir, "docs", "rules.zh-CN.md")));
 
   const passingRun = run(
     process.execPath,
