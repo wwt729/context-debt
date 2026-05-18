@@ -42,7 +42,7 @@ AI coding assistants are now part of the repo surface. Over time, those instruct
 - No telemetry.
 - No network access by default.
 - Deterministic and testable rules.
-- Human-readable terminal output and machine-readable JSON output.
+- Human-readable terminal output, machine-readable JSON output, and static HTML reports.
 
 ## Install
 
@@ -67,6 +67,7 @@ Requirements:
 context-debt scan .
 context-debt scan . --strict
 context-debt scan . --format json
+context-debt scan . --format html --output context-debt-report.html
 context-debt doctor .
 context-debt fix .
 context-debt fix . --write
@@ -100,11 +101,12 @@ It checks structured signals such as command references, local file/path referen
 context-debt scan [path]
 ```
 
-Scan a repository and emit text or JSON results.
+Scan a repository and emit text, JSON, or static HTML results.
 
 Common options:
 
 - `--json` or `--format json`: output machine-readable JSON
+- `--format html --output <path>`: write a standalone HTML report
 - `--strict`: fail on `HIGH` and high-confidence `MEDIUM`
 - `--no-color`: disable ANSI color
 - `--verbose`: show explanations and extra issue metadata

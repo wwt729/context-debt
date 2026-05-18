@@ -42,7 +42,7 @@
 - 不做遥测
 - 默认不依赖网络
 - 规则必须确定且可测试
-- 同时提供适合人读的终端输出和适合机器消费的 JSON 输出
+- 同时提供适合人读的终端输出、适合机器消费的 JSON 输出和静态 HTML 报告
 
 ## 安装
 
@@ -67,6 +67,7 @@ npm install -D context-debt
 context-debt scan .
 context-debt scan . --strict
 context-debt scan . --format json
+context-debt scan . --format html --output context-debt-report.html
 context-debt doctor .
 context-debt fix .
 context-debt fix . --write
@@ -100,11 +101,12 @@ context-debt fix . --write
 context-debt scan [path]
 ```
 
-扫描指定仓库，并输出文本或 JSON 结果。
+扫描指定仓库，并输出文本、JSON 或静态 HTML 结果。
 
 常用选项：
 
 - `--json` 或 `--format json`：输出机器可读 JSON
+- `--format html --output <path>`：写入独立 HTML 报告
 - `--strict`：将 `HIGH` 和高置信度 `MEDIUM` 视为失败
 - `--no-color`：关闭彩色输出
 - `--verbose`：显示 explanation 和额外问题元数据

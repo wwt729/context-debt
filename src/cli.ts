@@ -11,9 +11,12 @@ import {
   formatDoctorReport,
   formatErrorReport,
   formatFixReport,
-  formatJsonReport,
-  formatTextReport,
 } from "./core/report.js";
+import {
+  formatScanReport,
+  resolveScanReportFormat,
+  shouldReportErrorAsJson,
+} from "./core/scan-report.js";
 import {
   diagnoseRepository,
   getExitCode,
@@ -31,9 +34,10 @@ type ScanOptions = {
   json?: boolean;
   color?: boolean;
   exclude?: string[];
-  format?: "json" | "text";
+  format?: string;
   include?: string[];
   maxIssues?: string;
+  output?: string;
   root?: string[];
   strict?: boolean;
   verbose?: boolean;
@@ -70,7 +74,8 @@ export async function runCli(
     .command("scan")
     .argument("[path]", "repository path to scan", ".")
     .option("--json", "output machine-readable JSON")
-    .option("--format <format>", "output format: text or json")
+    .option("--format <format>", "output format: text, json, or html")
+    .option("--output <path>", "write report output to a file")
     .option("--strict", "fail on HIGH and high-confidence MEDIUM issues")
     .option("--no-color", "disable colored terminal output")
     .option("--verbose", "show explanation and rule metadata in text output")
@@ -152,19 +157,33 @@ async function handleScan(
       maxIssues: parseIntegerOption(options.maxIssues),
       roots: options.root,
     });
-    const output = shouldUseJson(options)
-      ? formatJsonReport(result)
-      : formatTextReport(result, {
-          color: options.color ?? true,
-          verbose: options.verbose ?? false,
-        });
+    const format = resolveScanReportFormat(options);
+    const output = formatScanReport(result, format, {
+      color: options.color ?? true,
+      verbose: options.verbose ?? false,
+    });
 
-    io.stdout(output);
+    writeScanOutput(output, options, io);
     return getExitCode(result, options.strict ?? false);
   } catch (error) {
-    io.stderr(formatErrorReport(error, options.json ?? false));
+    io.stderr(formatErrorReport(error, shouldReportErrorAsJson(options)));
     return 2;
   }
+}
+
+function writeScanOutput(
+  output: string,
+  options: ScanOptions,
+  io: CliIo,
+): void {
+  if (!options.output) {
+    io.stdout(output);
+    return;
+  }
+
+  const outputPath = resolve(options.output);
+  writeFileSync(outputPath, output, "utf8");
+  io.stdout(`Wrote ${outputPath}\n`);
 }
 
 async function handleFix(
@@ -255,10 +274,6 @@ function parseIntegerOption(value?: string): number | undefined {
 
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-}
-
-function shouldUseJson(options: ScanOptions): boolean {
-  return options.json === true || options.format === "json";
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

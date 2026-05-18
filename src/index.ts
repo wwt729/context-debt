@@ -1,6 +1,7 @@
 export { loadConfig } from "./core/config.js";
 export { discoveryPatterns } from "./core/discovery.js";
 export { fixRepository } from "./core/fix.js";
+export { formatHtmlReport } from "./core/html-report.js";
 export type {
   NormalizedRegressionIssue,
   NormalizedRegressionSnapshot,
@@ -21,6 +22,11 @@ export {
   normalizeRegressionResult,
 } from "./core/regressions.js";
 export { formatJsonReport, formatTextReport } from "./core/report.js";
+export {
+  formatScanReport,
+  resolveScanReportFormat,
+  shouldReportErrorAsJson,
+} from "./core/scan-report.js";
 export {
   diagnoseRepository,
   getExitCode,
